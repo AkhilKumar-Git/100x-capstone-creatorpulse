@@ -1,1 +1,0 @@
-# creatorpulse-frontend
