@@ -277,4 +277,5 @@ For support, email support@creatorpulse.com or join our Discord community.
 
 **Made with ❤️ for content creators worldwide**
 
-*CreatorPulse - Where AI meets creativity*
+*CreatorPulse - Where AI meets creativity*#   c r e a t o r p u l s e - f r o n t e n d  
+ 
