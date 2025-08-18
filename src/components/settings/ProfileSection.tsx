@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,29 +9,68 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Upload, Camera, Mail, MapPin, Link as LinkIcon, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSettings } from '@/lib/settings';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ProfileSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: 'Creator Name',
-    username: 'creator_pulse',
-    email: 'creator@example.com',
-    location: 'San Francisco, CA',
-    website: 'creator-portfolio.com',
-    bio: 'Content creator passionate about AI and technology'
+    fullName: '',
+    username: '',
+    email: '',
+    location: '',
+    website: '',
+    bio: ''
   });
+  
+  const { user } = useAuth();
+  const { getUserProfile, updateUserProfile } = useSettings();
+
+  // Load user profile data on component mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (user) {
+        const profile = await getUserProfile();
+        if (profile) {
+          setFormData({
+            fullName: profile.full_name || '',
+            username: profile.username || '',
+            email: user.email || '',
+            location: profile.location || '',
+            website: profile.website || '',
+            bio: profile.bio || ''
+          });
+        }
+      }
+    };
+    
+    loadProfile();
+  }, [user, getUserProfile]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSaveChanges = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Profile updated successfully!');
+      const success = await updateUserProfile({
+        full_name: formData.fullName,
+        username: formData.username,
+        location: formData.location,
+        website: formData.website,
+        bio: formData.bio
+      });
+      
+      if (success) {
+        toast.success('Profile updated successfully!');
+      } else {
+        toast.error('Failed to update profile. Please try again.');
+      }
     } catch (error) {
+      console.error('Error updating profile:', error);
       toast.error('Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);

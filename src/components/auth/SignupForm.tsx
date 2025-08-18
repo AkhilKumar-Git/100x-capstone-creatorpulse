@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface FormFieldProps {
   type: string;
@@ -139,8 +141,8 @@ const FloatingParticles: React.FC = () => {
       opacity: number;
 
       constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
+        this.x = Math.random() * (canvas?.width || 0);
+        this.y = Math.random() * (canvas?.height || 0);
         this.size = Math.random() * 2 + 1;
         this.speedX = (Math.random() - 0.5) * 0.5;
         this.speedY = (Math.random() - 0.5) * 0.5;
@@ -150,11 +152,10 @@ const FloatingParticles: React.FC = () => {
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
-
-        if (this.x > canvas.width) this.x = 0;
-        if (this.x < 0) this.x = canvas.width;
-        if (this.y > canvas.height) this.y = 0;
-        if (this.y < 0) this.y = canvas.height;
+        if (canvas && this.x > canvas.width) this.x = 0;
+        if (canvas && this.x < 0) this.x = canvas.width;
+        if (canvas && this.y > canvas.height) this.y = 0;
+        if (canvas && this.y < 0) this.y = canvas.height;
       }
 
       draw() {
@@ -210,6 +211,7 @@ export const SignupForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const router = useRouter();
+  const { signUp, signInWithGoogle } = useAuth();
 
   // Check if passwords match
   useEffect(() => {
@@ -226,19 +228,35 @@ export const SignupForm: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log('Signup submitted:', { name, email, password });
-    
-    // Redirect to dashboard on successful signup
-    router.push('/dashboard');
-    setIsSubmitting(false);
+    try {
+      const { error } = await signUp(email, password, name);
+      
+      if (error) {
+        toast.error(error.message || 'Failed to create account');
+        setIsSubmitting(false);
+        return;
+      }
+
+      toast.success('Account created successfully! Please check your email to verify your account.');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleGoogleAuth = () => {
-    console.log('Google OAuth signup');
-    // Implement Google OAuth here
+  const handleGoogleAuth = async () => {
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        toast.error(error.message || 'Failed to sign up with Google');
+      }
+    } catch (error) {
+      console.error('Google auth error:', error);
+      toast.error('An unexpected error occurred');
+    }
   };
 
   return (

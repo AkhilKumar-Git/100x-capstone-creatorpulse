@@ -16,6 +16,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ClientSideWrapper from "./ClientSideWrapper";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -27,6 +29,7 @@ export default function NewAppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { user, signOut } = useAuth();
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -77,11 +80,15 @@ export default function NewAppLayout({ children }: AppLayoutProps) {
   // Profile link is now part of Settings
 
   // Logout functionality
-  const handleLogout = () => {
-    // Add your logout logic here
-    console.log("Logging out...");
-    // For now, redirect to login
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Successfully signed out');
+      router.push("/login");
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to sign out');
+    }
   };
 
   const logoutLink = {
@@ -141,9 +148,9 @@ export default function NewAppLayout({ children }: AppLayoutProps) {
                   }}
                   className="flex items-center justify-between w-full"
                 >
-                  <span className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre">
-                    Creator
-                  </span>
+                                  <span className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre">
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Creator'}
+                </span>
                   <ChevronUp 
                     className={`h-4 w-4 text-neutral-700 dark:text-neutral-200 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`}
                   />

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Bell, Mail, Smartphone, Globe, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSettings } from '@/lib/settings';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NotificationSettings {
   [key: string]: boolean;
@@ -42,18 +44,120 @@ export function NotificationsSection() {
     pushNotifications: true,
     browserNotifications: false
   });
+  
+  const { user } = useAuth();
+  const { getNotificationPreferences, updateNotificationPreferences } = useSettings();
+
+  // Load notification preferences on component mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (user) {
+        const prefs = await getNotificationPreferences();
+        if (prefs) {
+          setNotifications({
+            productUpdates: prefs.product_updates,
+            newFeatures: prefs.new_features,
+            platformAnnouncements: prefs.platform_announcements,
+            weeklyReports: prefs.weekly_reports,
+            performanceSummary: prefs.performance_summary,
+            trendingTopics: prefs.trending_topics,
+            securityAlerts: prefs.security_alerts,
+            billingNotifications: prefs.billing_notifications,
+            paymentFailures: prefs.payment_failures,
+            aiDraftsReady: prefs.ai_drafts_ready,
+            contentAnalysis: prefs.content_analysis,
+            styleProfileUpdates: prefs.style_profile_updates,
+            emailDigest: prefs.email_digest,
+            marketingEmails: prefs.marketing_emails,
+            pushNotifications: prefs.push_notifications,
+            browserNotifications: prefs.browser_notifications
+          });
+        }
+      }
+    };
+    
+    loadPreferences();
+  }, [user, getNotificationPreferences]);
 
   const handleToggle = async (key: string) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 300));
+    if (!user) return;
+    
+    const newValue = !notifications[key];
+    setNotifications(prev => ({ ...prev, [key]: newValue }));
+    
+    // Map the frontend key to database column name
+    const dbKeyMap: Record<string, string> = {
+      productUpdates: 'product_updates',
+      newFeatures: 'new_features',
+      platformAnnouncements: 'platform_announcements',
+      weeklyReports: 'weekly_reports',
+      performanceSummary: 'performance_summary',
+      trendingTopics: 'trending_topics',
+      securityAlerts: 'security_alerts',
+      billingNotifications: 'billing_notifications',
+      paymentFailures: 'payment_failures',
+      aiDraftsReady: 'ai_drafts_ready',
+      contentAnalysis: 'content_analysis',
+      styleProfileUpdates: 'style_profile_updates',
+      emailDigest: 'email_digest',
+      marketingEmails: 'marketing_emails',
+      pushNotifications: 'push_notifications',
+      browserNotifications: 'browser_notifications'
+    };
+    
+    const dbKey = dbKeyMap[key];
+    if (dbKey) {
+      try {
+        await updateNotificationPreferences({ [dbKey]: newValue });
+      } catch (error) {
+        console.error('Error updating notification preference:', error);
+        // Revert the change if update fails
+        setNotifications(prev => ({ ...prev, [key]: !newValue }));
+      }
+    }
   };
 
   const handleSaveAll = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Notification preferences updated successfully!');
+      const dbUpdates: Record<string, boolean> = {};
+      Object.entries(notifications).forEach(([key, value]) => {
+        const dbKeyMap: Record<string, string> = {
+          productUpdates: 'product_updates',
+          newFeatures: 'new_features',
+          platformAnnouncements: 'platform_announcements',
+          weeklyReports: 'weekly_reports',
+          performanceSummary: 'performance_summary',
+          trendingTopics: 'trending_topics',
+          securityAlerts: 'security_alerts',
+          billingNotifications: 'billing_notifications',
+          paymentFailures: 'payment_failures',
+          aiDraftsReady: 'ai_drafts_ready',
+          contentAnalysis: 'content_analysis',
+          styleProfileUpdates: 'style_profile_updates',
+          emailDigest: 'email_digest',
+          marketingEmails: 'marketing_emails',
+          pushNotifications: 'push_notifications',
+          browserNotifications: 'browser_notifications'
+        };
+        
+        const dbKey = dbKeyMap[key];
+        if (dbKey) {
+          dbUpdates[dbKey] = value;
+        }
+      });
+      
+      const success = await updateNotificationPreferences(dbUpdates);
+      if (success) {
+        toast.success('Notification preferences updated successfully!');
+      } else {
+        toast.error('Failed to update notification preferences. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      toast.error('Failed to update notification preferences. Please try again.');
     } finally {
       setIsLoading(false);
     }
