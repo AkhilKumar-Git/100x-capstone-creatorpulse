@@ -8,7 +8,7 @@ import { StyleDialog } from "./StyleDialog";
 import { WordCloud } from "./WordCloud";
 import { ToneAnalysis } from "./ToneAnalysis";
 import { VoiceDNA } from "./VoiceDNA";
-import { extractVocabulary, analyzeTone, extractFormattingHabits, type WordData, type ToneData } from "@/lib/style/analysis";
+import { extractVocabularyWithAI, analyzeTone, extractFormattingHabits, extractPhrasePatterns, type WordData, type ToneData, type PhrasePattern } from "@/lib/style/analysis";
 import { shouldRefreshAnalysis, storeAnalysisData, getStoredAnalysisData, testDatabaseConnection } from "@/lib/style/database";
 import { FileText, Plus, Brain, BarChart3 } from "lucide-react";
 import { StyleSample } from "@/lib/database.types";
@@ -67,14 +67,15 @@ export function StyleBoard() {
     else readabilityScore = "Grade 12";
     
     // Use cached analysis if available, otherwise compute fresh
-    let vocabulary, toneAnalysis, formattingHabits;
+    let vocabulary: WordData[], toneAnalysis: ToneData[], formattingHabits: string[];
     
     if (cachedAnalysis) {
       vocabulary = cachedAnalysis.vocabulary;
       toneAnalysis = cachedAnalysis.toneAnalysis;
       formattingHabits = cachedAnalysis.formattingHabits;
     } else {
-      vocabulary = extractVocabulary(styles);
+      // Use fallback analysis for immediate display, AI analysis will be loaded separately
+      vocabulary = [];
       toneAnalysis = analyzeTone(styles);
       formattingHabits = extractFormattingHabits(styles);
     }
@@ -142,11 +143,51 @@ export function StyleBoard() {
       console.log('Fresh analysis needed, will compute and store');
       setCachedAnalysis(null);
       
+      // Load AI-powered vocabulary analysis
+      await loadAIVocabularyAnalysis();
+      
     } catch (error) {
       console.error("Error loading analysis data:", error);
       setCachedAnalysis(null);
     } finally {
       setAnalysisLoading(false);
+    }
+  };
+
+  // Load AI-powered vocabulary analysis
+  const loadAIVocabularyAnalysis = async () => {
+    try {
+      if (styles.length === 0) return;
+      
+      console.log('Loading AI-powered vocabulary analysis...');
+      
+      // Get AI vocabulary analysis
+      const aiVocabulary = await extractVocabularyWithAI(styles);
+      
+      // Get other analysis data
+      const toneAnalysis = analyzeTone(styles);
+      const formattingHabits = extractFormattingHabits(styles);
+      
+      // Set cached analysis with AI results
+      setCachedAnalysis({
+        vocabulary: aiVocabulary,
+        toneAnalysis,
+        formattingHabits
+      });
+      
+      console.log('AI vocabulary analysis loaded successfully:', aiVocabulary.length, 'items');
+      
+    } catch (error) {
+      console.error('Error loading AI vocabulary analysis:', error);
+      // Fallback to basic analysis
+      const toneAnalysis = analyzeTone(styles);
+      const formattingHabits = extractFormattingHabits(styles);
+      
+      setCachedAnalysis({
+        vocabulary: [],
+        toneAnalysis,
+        formattingHabits
+      });
     }
   };
 
@@ -177,7 +218,14 @@ export function StyleBoard() {
           });
         } catch (error) {
           console.error("Error storing analysis data:", error);
-          // Don't throw here, just log the error
+          // Show a toast notification but don't break the UI
+          toast.error('Failed to save style analysis to database. Analysis will be computed fresh each time.');
+          // Set cached analysis anyway so the UI still works
+          setCachedAnalysis({
+            vocabulary: analysisData.vocabulary,
+            toneAnalysis: analysisData.toneAnalysis,
+            formattingHabits: analysisData.formattingHabits
+          });
         }
       };
       storeData();

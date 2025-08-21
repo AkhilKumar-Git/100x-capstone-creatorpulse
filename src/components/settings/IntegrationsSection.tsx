@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { GradientButton } from '@/components/ui/gradient-button';
 import { XIcon } from '@/components/ui/x-icon';
 import { Linkedin, Instagram, Youtube, Globe, Slack, Zap, Settings, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';

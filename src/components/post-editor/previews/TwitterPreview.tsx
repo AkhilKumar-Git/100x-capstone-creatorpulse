@@ -11,8 +11,6 @@ import {
   Bookmark,
   MoreHorizontal
 } from 'lucide-react';
-import { GradientButton } from '@/components/ui/gradient-button';
-
 interface ThreadTweet {
   id: string;
   content: string;

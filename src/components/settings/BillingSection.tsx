@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { GradientButton } from '@/components/ui/gradient-button';
 import { CreditCard, Download, Calendar, Check, Star, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 

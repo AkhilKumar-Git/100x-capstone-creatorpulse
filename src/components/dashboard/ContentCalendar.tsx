@@ -7,7 +7,6 @@ import {
   CalendarDatePagination,
   CalendarDatePicker,
   CalendarHeader,
-  CalendarItem,
   CalendarMonthPicker,
   CalendarProvider,
   CalendarYearPicker,

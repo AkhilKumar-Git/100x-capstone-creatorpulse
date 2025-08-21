@@ -1,90 +1,100 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export interface TrendingTopic {
+interface TrendingTopic {
   id: string;
   topic_name: string;
-  topic_summary: string;
   momentum_score: number;
-  source_count: number;
-  source_icons: SourceIcon[];
-  last_updated: string;
-  metrics: {
-    engagement_rate: number;
-    velocity_score: number;
-    reach_multiplier: number;
-    mentions_count: number;
-    sentiment_score: number;
-    trending_duration: number;
-  };
-  source_type: string;
-  source_ref: string;
+  description?: string;
+  source_ids: string[];
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface SourceIcon {
+interface Source {
   id: string;
-  type: 'x' | 'youtube' | 'rss' | 'blog';
+  type: string;
   handle?: string;
   url?: string;
-  avatar_url?: string;
+  name: string;
+  avatar: string;
 }
 
-export interface PersonalDraft {
+interface Draft {
   id: string;
-  platform: 'x' | 'linkedin' | 'instagram';
+  title: string;
   content: string;
-  based_on: string | null;
-  status: 'generated' | 'reviewed' | 'accepted' | 'rejected';
+  platform: string;
+  status: string;
   created_at: string;
-  updated_at: string;
 }
 
-export const useTrendingTopics = () => {
+interface TrendingTopicsResponse {
+  topics: TrendingTopic[];
+  sources: Source[];
+  drafts: Draft[];
+  topicsCount: number;
+  sourcesCount: number;
+  draftsCount: number;
+}
+
+export function useTrendingTopics() {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
-  const [personalDrafts, setPersonalDrafts] = useState<PersonalDraft[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchTrendingTopics = async () => {
+  const fetchTrendingTopics = useCallback(async () => {
     if (!user) return;
-    
+
     try {
-      setLoading(true);
-      
-      // Fetch trending topics from your sources
+      console.log('Fetching trending topics...');
       const response = await fetch('/api/trending-topics');
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch trending topics');
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`Failed to fetch trending topics: ${response.status}`);
       }
-      
-      const data = await response.json();
+
+      const data: TrendingTopicsResponse = await response.json();
+      console.log('API response data:', data);
+
       setTrendingTopics(data.topics || []);
-      setPersonalDrafts(data.drafts || []);
-      
+      setSources(data.sources || []);
+      setDrafts(data.drafts || []);
+      setError(null);
     } catch (err) {
+      console.error('Error in fetchTrendingTopics:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch trending topics');
-      console.error('Error fetching trending topics:', err);
+      setTrendingTopics([]);
+      setSources([]);
+      setDrafts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  const refreshTopics = useCallback(() => {
+    setLoading(true);
+    fetchTrendingTopics();
+  }, [fetchTrendingTopics]);
 
   useEffect(() => {
     fetchTrendingTopics();
-  }, [user]);
-
-  const refreshTopics = () => {
-    fetchTrendingTopics();
-  };
+  }, [fetchTrendingTopics]);
 
   return {
     trendingTopics,
-    personalDrafts,
+    sources,
+    drafts,
     loading,
     error,
-    refreshTopics,
+    refreshTopics
   };
-};
+}

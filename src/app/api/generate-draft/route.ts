@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { getStyleFewShots } from '@/lib/style/retrieve';
+// import { getStyleFewShots } from '@/lib/style/retrieve';
 
 const GenerateDraftSchema = z.object({
   topic: z.string().min(1, 'Topic is required'),

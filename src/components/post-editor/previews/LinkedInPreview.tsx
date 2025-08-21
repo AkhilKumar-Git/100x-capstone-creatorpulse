@@ -10,7 +10,6 @@ import {
   Send,
   MoreHorizontal,
   Users,
-  Briefcase
 } from 'lucide-react';
 
 interface LinkedInPreviewProps {

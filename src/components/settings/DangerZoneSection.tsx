@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { GradientButton } from '@/components/ui/gradient-button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { AlertTriangle, Trash2, Download, Archive } from 'lucide-react';
+import { Trash2, AlertTriangle, Shield, Download, Database, UserX, Archive } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function DangerZoneSection() {

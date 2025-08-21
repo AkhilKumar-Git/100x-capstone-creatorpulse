@@ -1,13 +1,14 @@
 'use client';
-
-import { useState, useCallback } from 'react';
+import { Play, Database, Zap, Twitter, Youtube, Rss, Brain, Edit, Check } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { GenerationStep } from '@/components/GenerateProgressOverlay';
+import { DashboardGenerationStep } from '@/components/DashboardGenerateProgressOverlay';
 
 export interface GenerateNowParams {
   sourceIds?: number[];
   includePlatforms?: Array<'x' | 'youtube' | 'blog' | 'rss'>;
+  forceRegenerate?: boolean;
 }
 
 export interface GenerateNowResult {
@@ -16,11 +17,12 @@ export interface GenerateNowResult {
   drafts?: number;
   message?: string;
   reason?: string;
+  alreadyGenerated?: boolean;
 }
 
 export interface GenerationProgress {
   currentStep: string;
-  steps: GenerationStep[];
+  steps: DashboardGenerationStep[];
   overallProgress: number;
 }
 
@@ -30,27 +32,35 @@ export const useGenerateNow = () => {
   const [result, setResult] = useState<GenerateNowResult | null>(null);
   const [progress, setProgress] = useState<GenerationProgress | null>(null);
   const [showProgress, setShowProgress] = useState(false);
+  const [alreadyGenerated, setAlreadyGenerated] = useState(false);
   const router = useRouter();
 
-  const updateProgress = useCallback((step: string, progress: number) => {
-    const allSteps: GenerationStep[] = [
-      { id: 'planning', title: 'Planning Next Moves', description: 'Analyzing your sources and planning content strategy', status: 'pending', icon: null },
-      { id: 'reading_x', title: 'Reading from X', description: 'Fetching latest tweets and engagement data', status: 'pending', icon: null },
-      { id: 'reading_youtube', title: 'Reading from YouTube', description: 'Analyzing video transcripts and channel data', status: 'pending', icon: null },
-      { id: 'reading_rss', title: 'Reading from RSS', description: 'Processing latest articles and blog posts', status: 'pending', icon: null },
-      { id: 'reading_blogs', title: 'Reading from Blogs', description: 'Scraping and analyzing blog content', status: 'pending', icon: null },
-      { id: 'unifying_sources', title: 'Unifying Sources', description: 'Combining data from all platforms', status: 'pending', icon: null },
-      { id: 'summarizing_trends', title: 'Summarizing Trends', description: 'Identifying key trending topics', status: 'pending', icon: null },
-      { id: 'scoring', title: 'Scoring Trends', description: 'Calculating momentum and engagement scores', status: 'pending', icon: null },
-      { id: 'almost_done', title: 'Almost Done', description: 'Uploading everything to Supabase', status: 'pending', icon: null },
-      { id: 'finished', title: 'Finished!', description: 'Content generation completed successfully', status: 'pending', icon: null }
-    ];
+  // Memoize the steps array to prevent unnecessary re-renders
+// In useGenerateNow.ts, update the allSteps array:
+const allSteps = useMemo(() => [
+  { id: 'start', title: 'Starting Generation', description: 'Initializing...', status: 'pending' as const, icon: Play },
+  { id: 'fetch-sources', title: 'Fetching Active Sources', description: 'Retrieving sources...', status: 'pending' as const, icon: Database },
+  { id: 'edge-function', title: 'Calling Edge Function', description: 'Deploying serverless...', status: 'pending' as const, icon: Zap },
+  { id: 'ingest-x', title: 'Ingesting X (Twitter)', description: 'Fetching tweets...', status: 'pending' as const, icon: Twitter },
+  { id: 'ingest-youtube', title: 'Ingesting YouTube', description: 'Video analysis...', status: 'pending' as const, icon: Youtube },
+  { id: 'ingest-blogs', title: 'Ingesting Blogs & RSS', description: 'Content extraction...', status: 'pending' as const, icon: Rss },
+  { id: 'ai-analysis', title: 'AI Analysis', description: 'OpenAI processing...', status: 'pending' as const, icon: Brain },
+  { id: 'generate-drafts', title: 'Generating Drafts', description: 'Creating content...', status: 'pending' as const, icon: Edit },
+  { id: 'complete', title: 'Generation Complete', description: 'Success!', status: 'pending' as const, icon: Check }
+], []);
 
+  const updateProgress = useCallback((step: string, progress: number) => {
     const updatedSteps = allSteps.map(s => {
       if (s.id === step) {
-        return { ...s, status: 'active' as const };
-      } else if (allSteps.findIndex(step => step.id === s.id) < allSteps.findIndex(step => step.id === step)) {
-        return { ...s, status: 'completed' as const };
+        return { ...s, status: 'in-progress' as const };  // Change 'active' to 'in-progress'
+      } else {
+        // Find the index of the current step and mark previous steps as completed
+        const currentStepIndex = allSteps.findIndex(stepItem => stepItem.id === step);
+        const stepIndex = allSteps.findIndex(stepItem => stepItem.id === s.id);
+        
+        if (currentStepIndex !== -1 && stepIndex < currentStepIndex) {
+          return { ...s, status: 'completed' as const };
+        }
       }
       return s;
     });
@@ -60,28 +70,29 @@ export const useGenerateNow = () => {
       steps: updatedSteps,
       overallProgress: progress
     });
-  }, []);
+  }, [allSteps]);
 
   const generate = async (params: GenerateNowParams = {}) => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setAlreadyGenerated(false);
     setShowProgress(true);
     
     // Initialize progress
-    updateProgress('planning', 10);
+    updateProgress('start', 10);
 
     try {
       // Simulate progress updates for each step
       const progressSteps = [
-        { step: 'reading_x', delay: 1000, progress: 20 },
-        { step: 'reading_youtube', delay: 2000, progress: 30 },
-        { step: 'reading_rss', delay: 3000, progress: 40 },
-        { step: 'reading_blogs', delay: 4000, progress: 50 },
-        { step: 'unifying_sources', delay: 5000, progress: 60 },
-        { step: 'summarizing_trends', delay: 6000, progress: 70 },
-        { step: 'scoring', delay: 7000, progress: 80 },
-        { step: 'almost_done', delay: 8000, progress: 90 }
+        { step: 'fetch-sources', delay: 1500, progress: 20 },
+        { step: 'edge-function', delay: 3000, progress: 30 },
+        { step: 'ingest-x', delay: 4500, progress: 40 },
+        { step: 'ingest-youtube', delay: 6000, progress: 50 },
+        { step: 'ingest-blogs', delay: 7500, progress: 60 },
+        { step: 'ai-analysis', delay: 9000, progress: 70 },
+        { step: 'generate-drafts', delay: 10500, progress: 80 },
+        { step: 'complete', delay: 12000, progress: 90 }
       ];
 
       // Start progress simulation
@@ -101,6 +112,25 @@ export const useGenerateNow = () => {
       const data: GenerateNowResult = await response.json();
 
       if (!response.ok) {
+        // Handle case when daily topics are already generated
+        if (response.status === 409 && data.alreadyGenerated) {
+          setAlreadyGenerated(true);
+          setShowProgress(false);
+          
+          toast.info(
+            'Trending topics already generated',
+            {
+              description: 'You can regenerate if you want fresh trends',
+              action: {
+                label: 'Regenerate',
+                onClick: () => generate({ ...params, forceRegenerate: true })
+              }
+            }
+          );
+          
+          return { ok: false, reason: 'Already generated', alreadyGenerated: true };
+        }
+        
         throw new Error(data.reason || `HTTP ${response.status}`);
       }
 
@@ -109,7 +139,7 @@ export const useGenerateNow = () => {
       }
 
       // Complete the process
-      setTimeout(() => updateProgress('finished', 100), 9000);
+      setTimeout(() => updateProgress('complete', 100), 12000);
 
       setResult(data);
 
@@ -118,10 +148,14 @@ export const useGenerateNow = () => {
       const draftsText = data.drafts ? `${data.drafts} drafts created` : '';
       const message = [trendsText, draftsText].filter(Boolean).join(', ');
       
+      const toastMessage = params.forceRegenerate 
+        ? `Trending topics regenerated! ${message}. Refreshing...`
+        : `Trending topics generated! ${message}. Refreshing...`;
+      
       toast.success(
-        `Drafts generated! ${message}. Refreshing...`,
+        toastMessage,
         {
-          description: data.message || 'Your content is being processed',
+          description: data.message || 'Your trending topics are now updated',
         }
       );
 
@@ -129,7 +163,7 @@ export const useGenerateNow = () => {
       setTimeout(() => {
         setShowProgress(false);
         router.refresh();
-      }, 11000);
+      }, 15000);
 
       return data;
 
@@ -139,7 +173,7 @@ export const useGenerateNow = () => {
       
       // Show error toast
       toast.error(
-        `Couldn't generate now — ${errorMessage}`,
+        `Couldn't generate trends — ${errorMessage}`,
         {
           description: 'Please try again or check your sources',
         }
@@ -157,6 +191,7 @@ export const useGenerateNow = () => {
     setResult(null);
     setProgress(null);
     setShowProgress(false);
+    setAlreadyGenerated(false);
   };
 
   const closeProgress = () => {
@@ -171,6 +206,7 @@ export const useGenerateNow = () => {
     progress,
     showProgress,
     closeProgress,
+    alreadyGenerated,
     reset,
   };
 };

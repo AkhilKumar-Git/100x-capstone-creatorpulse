@@ -2,19 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Link2, Upload, CheckCircle, Check } from 'lucide-react';
-import {
-  Stepper,
-  StepperContent,
-  StepperDescription,
-  StepperIndicator,
-  StepperItem,
-  StepperNav,
-  StepperPanel,
-  StepperTitle,
-  StepperTrigger,
-  StepperSeparator,
-} from '@/components/ui/stepper';
+import { Link2, Upload, CheckCircle, Check, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import DisplayCards from '@/components/ui/display-cards';
 
 export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(1);
@@ -39,6 +28,37 @@ export function HowItWorks() {
       title: "Set Preferences & Start Creating",
       description: "Choose delivery channels and draft formats, then receive AI-powered posts every morning in under 15 minutes.",
       icon: CheckCircle,
+    },
+  ];
+
+  // Three cards representing the three steps
+  const stepCards = [
+    {
+      icon: <Link2 className="size-4 text-blue-300" />,
+      title: "Connect Platforms",
+      description: "Link your social media accounts",
+      date: "Step 1",
+      iconClassName: "text-blue-500",
+      titleClassName: "text-blue-500",
+      className: "[grid-area:stack] hover:-translate-y-16 hover:scale-110 hover:rotate-y-0 hover:skew-y-0 hover:z-50 hover:shadow-2xl before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0 transition-all duration-700 ease-out",
+    },
+    {
+      icon: <Upload className="size-4 text-purple-300" />,
+      title: "Upload Content",
+      description: "Share your best posts for AI learning",
+      date: "Step 2",
+      iconClassName: "text-purple-500",
+      titleClassName: "text-purple-500",
+      className: "[grid-area:stack] translate-x-24 translate-y-16 hover:-translate-y-8 hover:scale-110 hover:rotate-y-0 hover:skew-y-0 hover:z-50 hover:shadow-2xl before:absolute before:w-[100%] before:outline-1 before:rounded-xl before:outline-border before:h-[100%] before:content-[''] before:bg-blend-overlay before:bg-background/50 grayscale-[100%] hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0 before:left-0 before:top-0 transition-all duration-700 ease-out",
+    },
+    {
+      icon: <Zap className="size-4 text-green-300" />,
+      title: "AI Generation",
+      description: "Get personalized content every morning",
+      date: "Step 3",
+      iconClassName: "text-green-500",
+      titleClassName: "text-green-500",
+      className: "[grid-area:stack] translate-x-48 translate-y-32 hover:translate-y-16 hover:scale-110 hover:rotate-y-0 hover:skew-y-0 hover:z-50 hover:shadow-2xl transition-all duration-700 ease-out",
     },
   ];
 
@@ -96,110 +116,17 @@ export function HowItWorks() {
           </p>
         </motion.div>
 
-        {/* Stepper Container */}
-        <Stepper
-          value={activeStep}
-          onValueChange={setActiveStep}
-          orientation="vertical"
-          className="flex flex-col lg:flex-row items-start justify-center gap-12 lg:gap-20"
-          indicators={{
-            completed: <Check className="size-4" />,
-            active: <div className="w-2 h-2 bg-white rounded-full" />,
-          }}
-        >
-          {/* Steps Navigation - Left side on desktop */}
-          <div className="w-full lg:w-auto">
-            <StepperNav className="relative">
-              {steps.map((step, index) => (
-                <motion.div
-                  key={step.step}
-                  ref={(el) => (stepRefs.current[index] = el)}
-                  initial={{ opacity: 0, x: -50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ 
-                    duration: 0.8, 
-                    delay: index * 0.2,
-                    ease: "easeOut"
-                  }}
-                  viewport={{ once: true }}
-                  className="mb-8 lg:mb-12"
-                >
-                  <StepperItem
-                    step={step.step}
-                    className="relative items-start not-last:flex-1"
-                  >
-                    <StepperTrigger className="items-start pb-8 last:pb-0 gap-4 group">
-                      {/* Magic UI Glow Effect */}
-                      <div className="relative">
-                        <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-full blur opacity-0 group-data-[state=active]:opacity-100 transition duration-1000"></div>
-                        
-                        <StepperIndicator className="relative size-12 data-[state=completed]:bg-green-500 data-[state=completed]:text-white data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=inactive]:bg-neutral-700 data-[state=inactive]:text-gray-400 border-2 border-neutral-600 data-[state=active]:border-blue-400 data-[state=completed]:border-green-400">
-                          <step.icon className="size-5" />
-                        </StepperIndicator>
-                      </div>
-                      
-                      <div className="mt-1 text-left max-w-sm">
-                        <StepperTitle className="text-lg font-semibold mb-2 text-white group-data-[state=active]:text-blue-400 group-data-[state=completed]:text-green-400">
-                          {step.title}
-                        </StepperTitle>
-                        <StepperDescription className="text-gray-300 leading-relaxed text-sm">
-                          {step.description}
-                        </StepperDescription>
-                      </div>
-                    </StepperTrigger>
-                    
-                    {index < steps.length - 1 && (
-                      <StepperSeparator className="absolute top-12 left-6 -order-1 m-0 -translate-x-1/2 group-data-[orientation=vertical]/stepper-nav:h-16 group-data-[orientation=vertical]/stepper-nav:w-0.5 group-data-[state=completed]/step:bg-green-500 group-data-[state=active]/step:bg-blue-500 bg-neutral-700" />
-                    )}
-                  </StepperItem>
-                </motion.div>
-              ))}
-            </StepperNav>
-          </div>
+        {/* Main Content Container */}
+        <div className="flex flex-col lg:flex-row items-start justify-center gap-12 mb-20">
 
-          {/* Content Panel - Right side on desktop */}
-          <div className="w-full lg:w-1/2 lg:sticky lg:top-32">
-            <StepperPanel>
-              {steps.map((step, index) => (
-                <StepperContent key={step.step} value={step.step}>
-                  <motion.div
-                    className="bg-neutral-800/50 backdrop-blur-sm rounded-2xl p-8 border border-neutral-700"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {/* Step Visual/Icon */}
-                    <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full border border-neutral-600">
-                      <step.icon className="w-10 h-10 text-blue-400" />
-                    </div>
-                    
-                    {/* Step Content */}
-                    <div className="text-center">
-                      <h3 className="text-2xl font-semibold mb-4 text-white">
-                        Step {step.step}: {step.title}
-                      </h3>
-                      <p className="text-gray-300 text-lg leading-relaxed mb-6">
-                        {step.description}
-                      </p>
-                      
-                      {/* Progress indicator */}
-                      <div className="flex items-center justify-center space-x-2">
-                        {steps.map((_, i) => (
-                          <div
-                            key={i}
-                            className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                              i + 1 <= activeStep ? 'bg-blue-400' : 'bg-neutral-600'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                </StepperContent>
-              ))}
-            </StepperPanel>
+          {/* DisplayCards - Right side */}
+          <div className="w-full">
+              {/* DisplayCards Component */}
+              <div className="flex justify-center">
+                <DisplayCards cards={stepCards} />
+              </div>
           </div>
-        </Stepper>
+        </div>
       </div>
     </section>
   );

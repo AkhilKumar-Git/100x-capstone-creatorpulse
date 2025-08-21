@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
 import { AnimatedButton } from "@/components/ui/animated-button";
 import { cn } from "@/lib/utils";
@@ -103,9 +104,9 @@ export default function Hero() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <a href="/" className="text-xl md:text-2xl font-bold font-nothing-you">
+              <Link href="/" className="text-xl md:text-2xl font-bold font-nothing-you">
                 CreatorPulse
-              </a>
+              </Link>
             </motion.div>
 
             {/* Desktop Navigation */}

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 interface WordData {
   text: string;
   frequency: number;
-  category?: 'action' | 'emotion' | 'business' | 'casual' | 'technical';
+  category?: 'action' | 'emotion' | 'business' | 'casual' | 'technical' | 'pattern' | 'phrase';
 }
 
 interface WordCloudProps {
@@ -40,6 +40,10 @@ export function WordCloud({ words, className = "" }: WordCloudProps) {
         return 'from-green-300 to-green-500';
       case 'technical':
         return 'from-orange-300 to-orange-500';
+      case 'pattern':
+        return 'from-indigo-300 to-indigo-500';
+      case 'phrase':
+        return 'from-cyan-300 to-cyan-500';
       default:
         return 'from-gray-300 to-gray-500';
     }

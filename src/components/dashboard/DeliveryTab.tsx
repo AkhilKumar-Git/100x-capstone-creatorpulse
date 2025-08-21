@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { XIcon } from '@/components/ui/x-icon';
 import { ContentCalendar } from './ContentCalendar';
 import {
@@ -18,13 +18,10 @@ import {
   Mail,
   MessageCircle,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   List,
   Grid3X3,
   Linkedin,
   Instagram,
-  Youtube,
   Sparkles,
   Edit3,
   PenTool

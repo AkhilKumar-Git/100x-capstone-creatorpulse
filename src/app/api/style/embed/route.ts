@@ -25,7 +25,7 @@ async function embedBatch(texts: string[]) {
   
   const data = await response.json();
   console.log('OpenAI API success, received', data.data?.length || 0, 'embeddings');
-  return data.data.map((d: any) => d.embedding as number[]);
+  return data.data.map((d: { embedding: number[] }) => d.embedding);
 }
 
 export async function POST(req: Request) {
@@ -103,10 +103,10 @@ export async function POST(req: Request) {
       message: `Successfully embedded ${data?.length ?? 0} style samples` 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Style embedding error:', error);
     return NextResponse.json(
-      { ok: false, reason: error.message || 'Embedding failed' }, 
+      { ok: false, reason: error instanceof Error ? error.message : 'Embedding failed' }, 
       { status: 500 }
     );
   }

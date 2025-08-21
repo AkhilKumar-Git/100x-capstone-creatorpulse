@@ -58,11 +58,9 @@ import { useAuth } from '@/contexts/AuthContext';
 // Types based on actual database schema
 interface FormInputs {
   x: string;
-  instagram: string;
-  linkedin: string;
-  rss: string;
   youtube: string;
-  hashtag: string;
+  rss: string;
+  blog: string;
 }
 
 interface SuggestedSource {
@@ -103,16 +101,14 @@ export function EnhancedSourcesTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
-  const [activeTab, setActiveTab] = useState('x');
+  const [activeTab, setActiveTab] = useState<keyof FormInputs>('x');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [formInputs, setFormInputs] = useState<FormInputs>({
     x: '',
-    instagram: '',
-    linkedin: '',
-    rss: '',
     youtube: '',
-    hashtag: ''
+    rss: '',
+    blog: ''
   });
 
   const { user, session } = useAuth();
@@ -158,7 +154,7 @@ export function EnhancedSourcesTab() {
 
   // Filter sources based on search query
   const filteredSources = useMemo(() => {
-    if (!searchQuery.trim()) return sources;
+    if (!searchQuery || !searchQuery.trim()) return sources;
     return sources.filter(source => 
       (source.handle && source.handle.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (source.url && source.url.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -167,7 +163,7 @@ export function EnhancedSourcesTab() {
   }, [sources, searchQuery]);
 
   // Helper functions
-  const getSourceIcon = (type: Source['type']) => {
+  const getSourceIcon = (type: Source['type'] | keyof FormInputs) => {
     switch (type) {
       case 'x':
         return <XIcon className="h-5 w-5 text-white" />;
@@ -178,11 +174,11 @@ export function EnhancedSourcesTab() {
       case 'blog':
         return <Hash className="h-5 w-5 text-[#64748B]" />;
       default:
-        return <Rss className="h-5 w-5 text-[#64748B]" />;
+        return <Rss className="h-5 w-5 text-[#FF6600]" />;
     }
   };
 
-  const getSourceTypeName = (type: Source['type']) => {
+  const getSourceTypeName = (type: Source['type'] | keyof FormInputs) => {
     switch (type) {
       case 'x': return 'X';
       case 'youtube': return 'YouTube';
@@ -244,12 +240,14 @@ export function EnhancedSourcesTab() {
 
   // Handlers
   const handleInputChange = (type: keyof FormInputs, value: string) => {
-    setFormInputs(prev => ({ ...prev, [type]: value }));
+    if (type in formInputs) {
+      setFormInputs(prev => ({ ...prev, [type]: value }));
+    }
   };
 
   const handleAddSource = async () => {
     const currentInput = formInputs[activeTab as keyof FormInputs];
-    if (!currentInput.trim()) return;
+    if (!currentInput || !currentInput.trim()) return;
 
     if (!user) {
       toast.error('Please log in to add sources');
@@ -465,7 +463,7 @@ export function EnhancedSourcesTab() {
                   ].map((platform) => (
                     <motion.button
                       key={platform.type}
-                      onClick={() => setActiveTab(platform.type)}
+                      onClick={() => setActiveTab(platform.type as keyof FormInputs)}
                       className={`flex flex-col items-center gap-2 p-4 rounded-lg border transition-all duration-200 ${
                         activeTab === platform.type 
                           ? 'border-purple-500/50 bg-purple-500/10 text-[#F5F5F5]' 
@@ -487,7 +485,7 @@ export function EnhancedSourcesTab() {
                   ].map((platform) => (
                     <motion.button
                       key={platform.type}
-                      onClick={() => setActiveTab(platform.type)}
+                      onClick={() => setActiveTab(platform.type as keyof FormInputs)}
                       className={`flex flex-col items-center gap-2 p-4 rounded-lg border transition-all duration-200 ${
                         activeTab === platform.type 
                           ? 'border-purple-500/50 bg-purple-500/10 text-[#F5F5F5]' 
@@ -519,7 +517,7 @@ export function EnhancedSourcesTab() {
                   <Input
                     id="source-input"
                     placeholder={getPlaceholder(activeTab)}
-                    value={formInputs[activeTab as keyof FormInputs]}
+                    value={formInputs[activeTab as keyof FormInputs] || ''}
                     onChange={(e) => handleInputChange(activeTab as keyof FormInputs, e.target.value)}
                     className="bg-neutral-800/50 border-neutral-700 text-[#F5F5F5] placeholder:text-[#64748B] h-12"
                   />
@@ -534,7 +532,7 @@ export function EnhancedSourcesTab() {
                 
                 <motion.button
                   onClick={handleAddSource}
-                  disabled={isLoading || !formInputs[activeTab as keyof FormInputs].trim()}
+                  disabled={isLoading || !formInputs[activeTab as keyof FormInputs] || !formInputs[activeTab as keyof FormInputs].trim()}
                   className="group relative w-full flex items-center justify-center gap-2 overflow-hidden rounded-lg border-[1.5px] border-purple-500/40 bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-3 text-base font-semibold text-white cursor-pointer transition-all duration-500 ease-out hover:border-transparent hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -632,7 +630,7 @@ export function EnhancedSourcesTab() {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#64748B]" />
                       <Input
                         placeholder="Search sources..."
-                        value={searchQuery}
+                        value={searchQuery || ''}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 w-64 bg-neutral-800/50 border-neutral-700 text-[#F5F5F5]"
                       />

@@ -163,12 +163,38 @@ export async function storeAnalysisData(
     // Store vocabulary data
     if (vocabulary.length > 0) {
       console.log('Storing vocabulary data:', vocabulary.length, 'words');
-      const vocabData = vocabulary.map(word => ({
-        user_id: userId,
-        word: word.text,
-        frequency: word.frequency,
-        category: word.category || 'business'
-      }));
+      
+      // Validate vocabulary data before insertion
+      const validCategories = ['action', 'emotion', 'business', 'casual', 'technical'];
+      const vocabData = vocabulary.map(word => {
+        // Ensure category is valid
+        const category = word.category && validCategories.includes(word.category) 
+          ? word.category 
+          : 'business';
+        
+        // Ensure word is valid string and frequency is valid number
+        const wordText = String(word.text || '').trim();
+        const frequency = Math.max(1, Math.floor(Number(word.frequency) || 1));
+        
+        if (!wordText) {
+          console.warn('Skipping empty word in vocabulary');
+          return null;
+        }
+        
+        return {
+          user_id: userId,
+          word: wordText,
+          frequency: frequency,
+          category: category
+        };
+      }).filter(Boolean); // Remove any null entries
+      
+      if (vocabData.length === 0) {
+        console.warn('No valid vocabulary data to store');
+        return;
+      }
+      
+      console.log('Sample vocabulary data:', vocabData.slice(0, 3));
       
       const { data: vocabResult, error: vocabError } = await supabase
         .from('style_vocabulary')
@@ -183,7 +209,7 @@ export async function storeAnalysisData(
           code: vocabError.code,
           fullError: vocabError
         });
-        console.error('Vocabulary data attempted:', vocabData);
+        console.error('Sample failed data:', vocabData.slice(0, 3));
         throw new Error(`Vocabulary storage failed: ${vocabError.message || 'Unknown error'}`);
       }
       
@@ -193,13 +219,33 @@ export async function storeAnalysisData(
     // Store tone analysis data
     if (toneAnalysis.length > 0) {
       console.log('Storing tone analysis data:', toneAnalysis.length, 'tones');
-      const toneData = toneAnalysis.map(tone => ({
-        user_id: userId,
-        tone_name: tone.name,
-        percentage: tone.percentage,
-        color: tone.color,
-        description: tone.description
-      }));
+      
+      const toneData = toneAnalysis.map(tone => {
+        const toneName = String(tone.name || '').trim();
+        const percentage = Math.max(0, Math.min(100, Math.floor(Number(tone.percentage) || 0)));
+        const color = String(tone.color || '#3B82F6').trim();
+        const description = tone.description ? String(tone.description).trim() : null;
+        
+        if (!toneName) {
+          console.warn('Skipping tone with empty name');
+          return null;
+        }
+        
+        return {
+          user_id: userId,
+          tone_name: toneName,
+          percentage: percentage,
+          color: color,
+          description: description
+        };
+      }).filter(Boolean);
+      
+      if (toneData.length === 0) {
+        console.warn('No valid tone analysis data to store');
+        return;
+      }
+      
+      console.log('Sample tone data:', toneData.slice(0, 2));
       
       const { data: toneResult, error: toneError } = await supabase
         .from('style_tone_analysis')
@@ -214,7 +260,7 @@ export async function storeAnalysisData(
           code: toneError.code,
           fullError: toneError
         });
-        console.error('Tone data attempted:', toneData);
+        console.error('Sample failed tone data:', toneData.slice(0, 2));
         throw new Error(`Tone analysis storage failed: ${toneError.message || 'Unknown error'}`);
       }
       
@@ -224,11 +270,28 @@ export async function storeAnalysisData(
     // Store formatting habits
     if (formattingHabits.length > 0) {
       console.log('Storing formatting habits:', formattingHabits.length, 'habits');
-      const habitsData = formattingHabits.map(habit => ({
-        user_id: userId,
-        habit_text: habit,
-        confidence_score: 0.8 // Default confidence
-      }));
+      
+      const habitsData = formattingHabits.map(habit => {
+        const habitText = String(habit || '').trim();
+        
+        if (!habitText) {
+          console.warn('Skipping empty formatting habit');
+          return null;
+        }
+        
+        return {
+          user_id: userId,
+          habit_text: habitText,
+          confidence_score: 0.8 // Default confidence
+        };
+      }).filter(Boolean);
+      
+      if (habitsData.length === 0) {
+        console.warn('No valid formatting habits data to store');
+        return;
+      }
+      
+      console.log('Sample habits data:', habitsData.slice(0, 2));
       
       const { data: habitsResult, error: habitsError } = await supabase
         .from('style_formatting_habits')
@@ -243,7 +306,7 @@ export async function storeAnalysisData(
           code: habitsError.code,
           fullError: habitsError
         });
-        console.error('Habits data attempted:', habitsData);
+        console.error('Sample failed habits data:', habitsData.slice(0, 2));
         throw new Error(`Formatting habits storage failed: ${habitsError.message || 'Unknown error'}`);
       }
       

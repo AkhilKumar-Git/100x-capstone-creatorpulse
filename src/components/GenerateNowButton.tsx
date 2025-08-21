@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useGenerateNow, type GenerateNowParams } from '@/hooks/useGenerateNow';
 import { cn } from '@/lib/utils';
-import { GenerateProgressOverlay } from './GenerateProgressOverlay';
+import { DashboardGenerateProgressOverlay } from '@/components/DashboardGenerateProgressOverlay';
 
 interface GenerateNowButtonProps {
   sourceIds?: number[];
@@ -70,7 +70,7 @@ export const GenerateNowButton: React.FC<GenerateNowButtonProps> = ({
       ) : (
         <>
           <Sparkles className="mr-2 h-4 w-4" />
-          Generate Now
+          Generate Trends
         </>
       )}
     </>
@@ -88,23 +88,24 @@ export const GenerateNowButton: React.FC<GenerateNowButtonProps> = ({
         )}
         onClick={handleClick}
         disabled={loading}
-        aria-label={loading ? 'Generating content...' : 'Generate content now'}
+        aria-label={loading ? 'Generating trends...' : 'Generate trending topics now'}
         aria-busy={loading}
       >
         {children || defaultChildren}
       </Button>
 
-      {/* Progress Overlay */}
-      {progress && (
-        <GenerateProgressOverlay
-          isOpen={showProgress}
-          onClose={closeProgress}
-          currentStep={progress.currentStep}
-          steps={progress.steps}
-          overallProgress={progress.overallProgress}
-          onCancel={closeProgress}
-        />
-      )}
+      {/* Dashboard Progress Overlay */}
+     {/* Dashboard Progress Overlay */}
+{progress && (
+  <DashboardGenerateProgressOverlay
+    isVisible={showProgress}
+    onClose={closeProgress}
+    currentStep={Number(progress.currentStep)}
+    steps={progress.steps}
+    overallProgress={progress.overallProgress}
+    onCancel={closeProgress}
+  />
+)}
     </>
   );
 };

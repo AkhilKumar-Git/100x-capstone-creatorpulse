@@ -110,8 +110,8 @@ export function SettingsPageContent() {
                 className={cn(
                   "w-full justify-start h-auto p-4 text-left space-y-1",
                   activeSection === item.id
-                    ? "bg-purple-500/10 text-purple-300 border border-purple-500/20"
-                    : "text-gray-400 hover:text-white hover:bg-neutral-800/50"
+                    ? "bg-purple-500/10 text-purple-300 bg-transparent hover:bg-purple-500/20 border border-purple-500/20"
+                    : "text-gray-400 bg-transparent hover:bg-neutral-800/50"
                 )}
                 onClick={() => setActiveSection(item.id)}
               >

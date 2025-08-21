@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
+import { GradientButton } from '@/components/ui/gradient-button';
 import { Bell, Mail, Smartphone, Globe, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSettings } from '@/lib/settings';

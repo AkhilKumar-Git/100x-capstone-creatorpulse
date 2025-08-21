@@ -3,42 +3,13 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 
-// Rate limiting in memory (in production, use Redis or similar)
-const rateLimitMap = new Map<string, number>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 60 seconds
-
-// Environment validation
-const SUPABASE_FUNCTIONS_URL = process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_FUNCTIONS_URL) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL is not set');
-}
-
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
-}
-
-// Request body validation schema
 const GenerateBodySchema = z.object({
-  sourceIds: z.array(z.number()).optional(),
-  includePlatforms: z.array(z.enum(['x', 'youtube', 'blog', 'rss'])).optional(),
+  forceRegenerate: z.boolean().optional()
 });
-
-type GenerateBody = z.infer<typeof GenerateBodySchema>;
-
-// Edge Function response type
-interface EdgeFunctionResponse {
-  ok: boolean;
-  trends?: number;
-  drafts?: number;
-  message?: string;
-  [key: string]: unknown;
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // 1) Auth - Get current user
+    // 1) Get authenticated user
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,20 +19,20 @@ export async function POST(request: NextRequest) {
           get(name: string) {
             return cookieStore.get(name)?.value;
           },
-                  set(name: string, value: string, options: Record<string, unknown>) {
-          try {
-            cookieStore.set({ name, value, ...options });
-          } catch {
-            // The `set` method was called from a Server Component.
-          }
-        },
-        remove(name: string, options: Record<string, unknown>) {
-          try {
-            cookieStore.set({ name, value: '', ...options });
-          } catch {
-            // The `delete` method was called from a Server Component.
-          }
-        },
+          set(name: string, value: string, options: Record<string, unknown>) {
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch {
+              // The `set` method was called from a Server Component.
+            }
+          },
+          remove(name: string, options: Record<string, unknown>) {
+            try {
+              cookieStore.set({ name, value: '', ...options });
+            } catch {
+              // The `delete` method was called from a Server Component.
+            }
+          },
         },
       }
     );
@@ -69,165 +40,136 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
+      console.error('Authentication error:', authError);
       return NextResponse.json(
-        { ok: false, reason: 'Unauthorized' },
+        { error: 'Authentication error', reason: 'Auth session missing!' },
         { status: 401 }
       );
     }
 
-    // 2) Rate limiting
-    const now = Date.now();
-    const lastRequest = rateLimitMap.get(user.id);
-    
-    if (lastRequest && (now - lastRequest) < RATE_LIMIT_WINDOW) {
-      return NextResponse.json(
-        { ok: false, reason: 'Rate limit exceeded. Please wait 60 seconds between requests.' },
-        { status: 429 }
-      );
+    console.log('User authenticated:', user.id);
+
+    // 2) Parse request body
+    const body = await request.json();
+    const { forceRegenerate = false } = GenerateBodySchema.parse(body);
+
+    // 3) Check if daily generation already exists (unless force regenerate)
+    if (!forceRegenerate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data: existingTopics, error: checkError } = await supabase
+        .from('trend_items')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString())
+        .limit(1);
+
+      if (checkError) {
+        console.error('Error checking existing topics:', checkError);
+      } else if (existingTopics && existingTopics.length > 0) {
+        console.log('Daily topics already generated for user:', user.id);
+        return NextResponse.json(
+          { 
+            ok: false, 
+            reason: 'Daily trending topics already generated',
+            alreadyGenerated: true 
+          },
+          { status: 409 }
+        );
+      }
     }
-    
-    rateLimitMap.set(user.id, now);
 
-    // 3) Read and validate request body
-    let body: GenerateBody;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { ok: false, reason: 'Invalid JSON body' },
-        { status: 400 }
-      );
-    }
-
-    const validationResult = GenerateBodySchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { ok: false, reason: 'Invalid request body', details: validationResult.error.issues },
-        { status: 400 }
-      );
-    }
-
-    const { sourceIds, includePlatforms } = validationResult.data;
-
-    // 4) Query active sources for user
-    let query = supabase
+    // 4) Fetch active sources
+    console.log('Fetching active sources for user:', user.id);
+    const { data: sources, error: sourcesError } = await supabase
       .from('sources')
-      .select('id, type, handle, url, active')
+      .select('*')
       .eq('user_id', user.id)
       .eq('active', true);
-
-    // Apply source ID filter if provided
-    if (sourceIds && sourceIds.length > 0) {
-      query = query.in('id', sourceIds);
-    }
-
-    // Apply platform filter if provided
-    if (includePlatforms && includePlatforms.length > 0) {
-      query = query.in('type', includePlatforms);
-    }
-
-    const { data: sources, error: sourcesError } = await query;
 
     if (sourcesError) {
       console.error('Error fetching sources:', sourcesError);
       return NextResponse.json(
-        { ok: false, reason: 'Failed to fetch sources' },
+        { error: 'Failed to fetch sources', reason: sourcesError.message },
         { status: 500 }
       );
     }
 
+    console.log('Found active sources:', sources?.length || 0);
+
     if (!sources || sources.length === 0) {
       return NextResponse.json(
-        { ok: false, reason: 'No active sources found' },
+        { error: 'No active sources', reason: 'Please add and activate at least one source' },
         { status: 400 }
       );
     }
 
-    // 5) Map sources into the format expected by Edge Function
-    const x_handles: string[] = [];
-    const youtube_channel_ids: string[] = [];
-    const blog_urls: string[] = [];
-    const rss_urls: string[] = [];
-
-    sources.forEach(source => {
-      switch (source.type) {
-        case 'x':
-          if (source.handle) {
-            // Remove @ if present and normalize
-            x_handles.push(source.handle.replace(/^@/, ''));
-          }
-          break;
-        case 'youtube':
-          if (source.handle) {
-            youtube_channel_ids.push(source.handle);
-          }
-          break;
-        case 'blog':
-          if (source.url) {
-            blog_urls.push(source.url);
-          }
-          break;
-        case 'rss':
-          if (source.url) {
-            rss_urls.push(source.url);
-          }
-          break;
-      }
+    // 5) Use Supabase Edge Function for real-time ingestion and AI analysis
+    console.log('Starting real-time ingestion using Supabase Edge Function');
+    
+    // Prepare source data for Edge Function
+    const xHandles = sources.filter(s => s.type === 'x' && s.is_active).map(s => s.handle).filter(Boolean);
+    const youtubeChannels = sources.filter(s => s.type === 'youtube' && s.is_active).map(s => s.handle).filter(Boolean);
+    const blogUrls = sources.filter(s => s.type === 'blog' && s.is_active).map(s => s.url).filter(Boolean);
+    const rssUrls = sources.filter(s => s.type === 'rss' && s.is_active).map(s => s.url).filter(Boolean);
+    
+    console.log('Sources prepared for Edge Function:', {
+      xHandles,
+      youtubeChannels,
+      blogUrls,
+      rssUrls
     });
-
-    // 6) Call Edge Function with enhanced source data
-    const edgeFunctionPayload = {
-      user_id: user.id,
-      x_handles,
-      youtube_channel_ids,
-      blog_urls,
-      rss_urls,
-      // Add source metadata for better trend analysis
-      sources_metadata: sources.map(source => ({
-        id: source.id,
-        type: source.type,
-        handle: source.handle,
-        url: source.url,
-        active: source.active
-      }))
-    };
-
-    const edgeFunctionResponse = await fetch(
-      `${SUPABASE_FUNCTIONS_URL}/daily-generate`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(edgeFunctionPayload),
-      }
-    );
-
+    
+    // Call the Edge Function
+    const edgeFunctionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/daily_generate`;
+    const edgeFunctionResponse = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: JSON.stringify({
+        user_id: user.id,
+        x_handles: xHandles,
+        youtube_channel_ids: youtubeChannels,
+        blog_urls: blogUrls,
+        rss_urls: rssUrls
+      })
+    });
+    
     if (!edgeFunctionResponse.ok) {
       const errorText = await edgeFunctionResponse.text();
       console.error('Edge Function error:', errorText);
-      return NextResponse.json(
-        { 
-          ok: false, 
-          reason: `Edge Function failed: ${edgeFunctionResponse.status} ${edgeFunctionResponse.statusText}` 
-        },
-        { status: 500 }
-      );
+      throw new Error(`Edge Function failed: ${edgeFunctionResponse.status} - ${errorText}`);
     }
-
-    // 7) Return unified response
-    const edgeFunctionData: EdgeFunctionResponse = await edgeFunctionResponse.json();
     
+    const edgeFunctionResult = await edgeFunctionResponse.json();
+    console.log('Edge Function result:', edgeFunctionResult);
+    
+    if (!edgeFunctionResult.ok) {
+      throw new Error('Edge Function returned error');
+    }
+    
+    // The Edge Function already handles database insertion and draft generation
+    // We just need to return success
+    console.log(`Successfully generated ${edgeFunctionResult.trends || 0} trending topics via Edge Function`);
+
+    // Return success response
     return NextResponse.json({
-      ...edgeFunctionData,
-      ok: true, // Override any existing ok property from Edge Function
+      ok: true,
+      message: `Successfully generated trending topics from ${sources.length} sources`,
+      trends: edgeFunctionResult.trends || 0,
+      sources: sources.length
     });
 
-  } catch (error) {
-    console.error('Generate Now error:', error);
+  } catch (error: unknown) {
+    console.error('Generate now error:', error);
     return NextResponse.json(
-      { ok: false, reason: 'Internal server error' },
+      { 
+        error: 'Generation failed', 
+        reason: error instanceof Error ? error.message : 'Unknown error occurred' 
+      },
       { status: 500 }
     );
   }

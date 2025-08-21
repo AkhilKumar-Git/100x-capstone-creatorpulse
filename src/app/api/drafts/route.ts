@@ -1,37 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { sbServer } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // 1) Auth - Get current user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: Record<string, unknown>) {
-            try {
-              cookieStore.set({ name, value, ...options });
-            } catch {
-              // The `set` method was called from a Server Component.
-            }
-          },
-          remove(name: string, options: Record<string, unknown>) {
-            try {
-              cookieStore.set({ name, value: '', ...options });
-            } catch {
-              // The `delete` method was called from a Server Component.
-            }
-          },
-        },
-      }
-    );
-
+    const supabase = await sbServer();
+    
+    // Get the current user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -41,48 +15,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2) Get query parameters for pagination and filtering
-    const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('limit') || '20');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
-    const platform = url.searchParams.get('platform');
+    // Get platform filter from query params
+    const { searchParams } = new URL(request.url);
+    const platform = searchParams.get('platform');
 
-    // 3) Build query
+    // Build the query
     let query = supabase
       .from('drafts')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
-    if (platform) {
+    // Apply platform filter if specified
+    if (platform && platform !== 'all') {
       query = query.eq('platform', platform);
     }
 
-    // 4) Execute query
-    const { data: drafts, error: fetchError } = await query;
+    const { data: drafts, error } = await query;
 
-    if (fetchError) {
-      console.error('Error fetching drafts:', fetchError);
+    if (error) {
+      console.error('Error fetching drafts:', error);
       return NextResponse.json(
         { error: 'Failed to fetch drafts' },
         { status: 500 }
       );
     }
 
-    // 5) Return drafts
-    return NextResponse.json({
-      ok: true,
-      drafts,
-      pagination: {
-        limit,
-        offset,
-        hasMore: drafts.length === limit
-      }
-    });
-
+    return NextResponse.json({ drafts: drafts || [] });
   } catch (error) {
-    console.error('Fetch drafts error:', error);
+    console.error('Unexpected error in drafts API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,53 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { sbServer } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const SaveDraftSchema = z.object({
   platform: z.enum(['x', 'linkedin', 'instagram']),
   content: z.string().min(1, 'Content is required'),
-  title: z.string().optional(),
-  firstComment: z.string().optional(),
-  threads: z.array(z.object({
-    id: z.string(),
-    content: z.string(),
-    characterCount: z.number()
-  })).optional(),
-  originalTopic: z.string().optional(),
-  imageUrl: z.string().url().optional(),
-  generatedImageUrl: z.string().url().optional(),
+  based_on: z.number().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    // 1) Auth - Get current user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: Record<string, unknown>) {
-            try {
-              cookieStore.set({ name, value, ...options });
-            } catch {
-              // The `set` method was called from a Server Component.
-            }
-          },
-          remove(name: string, options: Record<string, unknown>) {
-            try {
-              cookieStore.set({ name, value: '', ...options });
-            } catch {
-              // The `delete` method was called from a Server Component.
-            }
-          },
-        },
-      }
-    );
-
+    const supabase = await sbServer();
+    
+    // Get the current user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
@@ -57,60 +23,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2) Parse and validate request body
+    // Parse and validate the request body
     const body = await request.json();
-    const validation = SaveDraftSchema.safeParse(body);
+    const validationResult = SaveDraftSchema.safeParse(body);
     
-    if (!validation.success) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Invalid request body', details: validation.error.message },
+        { error: 'Invalid request data', details: validationResult.error.issues },
         { status: 400 }
       );
     }
 
-    const { platform, content, title, firstComment, threads, originalTopic, imageUrl, generatedImageUrl } = validation.data;
+    const { platform, content, based_on, metadata } = validationResult.data;
 
-    // 3) Prepare draft data
-    const draftData = {
-      user_id: user.id,
-      platform,
-      content,
-      status: 'generated' as const,
-      metadata: {
-        title,
-        firstComment,
-        threads,
-        originalTopic,
-        imageUrl,
-        generatedImageUrl,
-        savedAt: new Date().toISOString(),
-      }
-    };
-
-    // 4) Save draft to database
-    const { data: savedDraft, error: saveError } = await supabase
+    // Insert the draft into the database
+    const { data: draft, error } = await supabase
       .from('drafts')
-      .insert(draftData)
+      .insert({
+        user_id: user.id,
+        platform,
+        content,
+        based_on,
+        metadata,
+        status: 'generated'
+      })
       .select()
       .single();
 
-    if (saveError) {
-      console.error('Error saving draft:', saveError);
+    if (error) {
+      console.error('Error saving draft:', error);
       return NextResponse.json(
         { error: 'Failed to save draft' },
         { status: 500 }
       );
     }
 
-    // 5) Return success response
-    return NextResponse.json({
-      ok: true,
-      draft: savedDraft,
-      message: 'Draft saved successfully'
+    return NextResponse.json({ 
+      success: true, 
+      draft,
+      message: 'Draft saved successfully' 
     });
-
   } catch (error) {
-    console.error('Save draft error:', error);
+    console.error('Unexpected error in save draft API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
+  console.log('Trending topics API called');
+  
   try {
     // 1) Auth - Get current user
     const cookieStore = await cookies();
@@ -34,12 +36,23 @@ export async function GET(request: NextRequest) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (authError || !user) {
+    if (authError) {
+      console.error('Auth error:', authError);
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Authentication error', details: authError.message },
         { status: 401 }
       );
     }
+    
+    if (!user) {
+      console.log('No user found');
+      return NextResponse.json(
+        { error: 'No authenticated user' },
+        { status: 401 }
+      );
+    }
+
+    console.log('User authenticated:', user.id);
 
     // 2) Fetch user's active sources only
     const { data: sources, error: sourcesError } = await supabase
@@ -51,54 +64,30 @@ export async function GET(request: NextRequest) {
     if (sourcesError) {
       console.error('Error fetching sources:', sourcesError);
       return NextResponse.json(
-        { error: 'Failed to fetch sources' },
+        { error: 'Failed to fetch sources', details: sourcesError.message },
         { status: 500 }
       );
     }
 
-    if (!sources || sources.length === 0) {
-      return NextResponse.json({
-        topics: [],
-        drafts: [],
-        sources: []
-      });
-    }
+    console.log('Sources fetched:', sources?.length || 0);
 
-    // 3) Fetch exactly 5 trending topics with their top 10 trending items
-    const { data: trendItems, error: trendsError } = await supabase
+    // 3) Fetch trending topics from the trend_items table
+    const { data: trendingTopics, error: topicsError } = await supabase
       .from('trend_items')
       .select('*')
       .eq('user_id', user.id)
       .order('score', { ascending: false })
-      .limit(50); // Get more items to group by topic
+      .limit(5);
 
-    if (trendsError) {
-      console.error('Error fetching trend items:', trendsError);
+    if (topicsError) {
+      console.error('Error fetching trending topics:', topicsError);
       return NextResponse.json(
-        { error: 'Failed to fetch trending topics' },
+        { error: 'Failed to fetch trending topics', details: topicsError.message },
         { status: 500 }
       );
     }
 
-    // Group items by topic and select top 5 topics with top 10 items each
-    const groupedByTopic = groupTrendItemsByTopic(trendItems || []);
-    const top5Topics = Object.entries(groupedByTopic)
-      .sort(([, a], [, b]) => b.avgScore - a.avgScore)
-      .slice(0, 5)
-      .map(([topic, data]) => ({
-        topic,
-        items: data.items.slice(0, 10), // Top 10 items per topic
-        avgScore: data.avgScore,
-        totalItems: data.items.length
-      }));
-
-    if (trendsError) {
-      console.error('Error fetching trend items:', trendsError);
-      return NextResponse.json(
-        { error: 'Failed to fetch trending topics' },
-        { status: 500 }
-      );
-    }
+    console.log('Trending topics fetched:', trendingTopics?.length || 0);
 
     // 4) Fetch user's drafts
     const { data: drafts, error: draftsError } = await supabase
@@ -106,85 +95,73 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(10);
 
     if (draftsError) {
       console.error('Error fetching drafts:', draftsError);
       return NextResponse.json(
-        { error: 'Failed to fetch drafts' },
+        { error: 'Failed to fetch drafts', details: draftsError.message },
         { status: 500 }
       );
     }
 
-    // 5) Process trending topics with source information and metrics
-    const processedTopics = top5Topics.map((topicData, index) => {
-      // Find only active sources that contributed to this trend
-      const contributingSources = sources.filter(source => {
-        // Only include active sources
-        return source.active === true;
-      });
+    console.log('Drafts fetched:', drafts?.length || 0);
 
-      const sourceIcons = contributingSources.map(source => ({
-        id: source.id,
-        type: source.type,
-        handle: source.handle,
-        url: source.url,
-        avatar_url: getSourceAvatar(source.type, source.handle || source.url)
-      }));
-
-      // Process the top 10 items for this topic
-      const processedItems = topicData.items.map(item => ({
-        id: item.id,
-        title: item.title || 'Untitled Item',
-        summary: item.summary || 'No summary available',
-        score: item.score,
-        source_type: item.source_type,
-        source_ref: item.source_ref,
-        created_at: item.created_at,
-        metrics: extractTrendingMetrics(item.meta)
-      }));
-
-      return {
-        id: `topic_${index}`,
-        topic_name: topicData.topic,
-        topic_summary: `Top trending topic with ${topicData.totalItems} items`,
-        momentum_score: topicData.avgScore,
-        source_count: contributingSources.length,
-        source_icons: sourceIcons.slice(0, 5), // Limit to 5 source icons
-        last_updated: new Date().toISOString(),
-        metrics: {
-          engagement_rate: Math.min(topicData.avgScore / 10, 100),
-          velocity_score: Math.min(topicData.items.length * 10, 100),
-          reach_multiplier: Math.min(topicData.avgScore / 5, 100),
-          mentions_count: topicData.totalItems,
-          sentiment_score: 50, // Placeholder
-          trending_duration: 1 // Placeholder
-        },
-        source_type: 'mixed',
-        source_ref: topicData.topic,
-        trending_items: processedItems
+    // 5) Process trending topics with source attribution
+    const processedTopics = trendingTopics?.map((topic: any) => {
+      console.log('Processing topic from trend_items:', topic);
+      const processed = {
+        id: topic.id,
+        topic_name: topic.title || topic.item_name,
+        momentum_score: topic.score || topic.trending_score || 0,
+        description: topic.summary || topic.item_content,
+        source_ids: topic.contributing_sources || [],
+        created_at: topic.created_at,
+        updated_at: topic.updated_at
       };
-    });
+      console.log('Processed topic result:', processed);
+      return processed;
+    }) || [];
 
-    // 6) Process drafts
-    const processedDrafts = (drafts || []).map(draft => ({
+    // Process sources for avatar display
+    const processedSources = sources?.map((source: any) => ({
+      id: source.id,
+      type: source.type,
+      handle: source.handle,
+      url: source.url,
+      name: source.handle || source.url || `${source.type} source`,
+      avatar: getSourceAvatar(source.type, source.handle, source.url)
+    })) || [];
+
+    // Process drafts
+    const processedDrafts = drafts?.map((draft: any) => ({
       id: draft.id,
-      platform: draft.platform,
+      title: draft.title,
       content: draft.content,
-      based_on: draft.based_on,
+      platform: draft.platform,
       status: draft.status,
-      created_at: draft.created_at,
-      updated_at: draft.updated_at
-    }));
+      created_at: draft.created_at
+    })) || [];
 
-    return NextResponse.json({
+    const response = {
       topics: processedTopics,
+      sources: processedSources,
       drafts: processedDrafts,
-      sources: sources
+      topicsCount: processedTopics.length,
+      sourcesCount: processedSources.length,
+      draftsCount: processedDrafts.length
+    };
+
+    console.log('API response prepared:', {
+      topicsCount: response.topicsCount,
+      draftsCount: response.draftsCount,
+      sourcesCount: response.sourcesCount
     });
+
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Trending topics error:', error);
+    console.error('Unexpected error in trending topics API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -192,74 +169,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper function to get source avatars/icons
-function getSourceAvatar(type: string, identifier: string | null): string {
-  if (!identifier) return '';
-  
+// Helper function to get source avatar/icon
+function getSourceAvatar(type: string, handle?: string, url?: string): string {
   switch (type) {
     case 'x':
-      // For X, you might want to fetch actual profile pictures
-      // For now, return a placeholder
-      return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(identifier)}`;
+      return `https://ui-avatars.com/api/?name=${handle || 'X'}&background=1DA1F2&color=fff&size=40`;
     case 'youtube':
-      // YouTube channel avatars
-      return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(identifier)}`;
+      return `https://ui-avatars.com/api/?name=${handle || 'YT'}&background=FF0000&color=fff&size=40`;
     case 'rss':
-      // RSS feed icons (could be favicon)
-      return `https://www.google.com/s2/favicons?domain=${identifier}`;
+      return `https://ui-avatars.com/api/?name=${handle || 'RSS'}&background=FF6600&color=fff&size=40`;
     case 'blog':
-      // Blog favicons
-      return `https://www.google.com/s2/favicons?domain=${identifier}`;
+      return `https://ui-avatars.com/api/?name=${handle || 'Blog'}&background=64748B&color=fff&size=40`;
     default:
-      return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(identifier)}`;
+      return `https://ui-avatars.com/api/?name=${handle || 'Source'}&background=64748B&color=fff&size=40`;
   }
-}
-
-// Helper function to group trend items by topic
-function groupTrendItemsByTopic(trendItems: any[]) {
-  const grouped: Record<string, { items: any[], avgScore: number }> = {};
-  
-  trendItems.forEach(item => {
-    // Extract topic from title or create a default topic
-    const topic = item.title?.split(' ').slice(0, 3).join(' ') || 'General';
-    
-    if (!grouped[topic]) {
-      grouped[topic] = { items: [], avgScore: 0 };
-    }
-    
-    grouped[topic].items.push(item);
-  });
-  
-  // Calculate average score for each topic
-  Object.keys(grouped).forEach(topic => {
-    const items = grouped[topic].items;
-    const totalScore = items.reduce((sum, item) => sum + (item.score || 0), 0);
-    grouped[topic].avgScore = totalScore / items.length;
-    
-    // Sort items by score within each topic
-    grouped[topic].items.sort((a, b) => (b.score || 0) - (a.score || 0));
-  });
-  
-  return grouped;
-}
-
-// Helper function to extract trending metrics from meta field
-function extractTrendingMetrics(meta: Record<string, unknown> | null) {
-  if (!meta) {
-    return {
-      engagement_rate: 0,
-      velocity_score: 0,
-      reach_multiplier: 0
-    };
-  }
-
-  return {
-    engagement_rate: meta.engagement_rate as number || 0,
-    velocity_score: meta.velocity_score as number || 0,
-    reach_multiplier: meta.reach_multiplier as number || 0,
-    // Add more metrics as needed
-    mentions_count: meta.mentions_count as number || 0,
-    sentiment_score: meta.sentiment_score as number || 0,
-    trending_duration: meta.trending_duration as number || 0
-  };
 }
