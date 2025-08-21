@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, X } from 'lucide-react';
 
 export interface DashboardGenerationStep {
   id: string;
@@ -17,7 +17,7 @@ interface DashboardGenerateProgressOverlayProps {
   currentStep: number;
   steps: DashboardGenerationStep[];
   onClose?: () => void;
-  overallProgress?: number;  // Add this
+  overallProgress?: number;
   onCancel?: () => void; 
 }
 
@@ -31,112 +31,84 @@ export function DashboardGenerateProgressOverlay({
 }: DashboardGenerateProgressOverlayProps) {
   if (!isVisible) return null;
 
+  // Get current step info for status display
+  const safeCurrentStep = Math.max(0, Math.min(currentStep, steps.length - 1));
+  const currentStepInfo = steps[safeCurrentStep] || steps[0];
+  const progressPercentage = overallProgress || Math.max(0, Math.min(100, ((safeCurrentStep + 1) / steps.length) * 100));
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-700"
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          className="bg-white dark:bg-gray-900 rounded-xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-700"
         >
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-white" />
+          {/* Header with close button */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Generating Trends
+              </h3>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Generating Content
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              We&apos;re analyzing your sources and creating trending topics...
+            {(onClose || onCancel) && (
+              <button
+                onClick={onClose || onCancel}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Message */}
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center space-x-2 mb-3">
+              <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {currentStepInfo?.title || 'Processing...'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {currentStepInfo?.description || 'Please wait while we analyze your sources...'}
             </p>
           </div>
 
-          <div className="space-y-4 mb-6">
-            {steps.map((step, index) => {
-              const isActive = index === currentStep;
-              const isCompleted = index < currentStep;
-              const isPending = index > currentStep;
-
-              return (
-                <motion.div
-                  key={step.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700'
-                      : isCompleted
-                      ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700'
-                      : 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
-                  }`}
-                >
-                  <div className="flex-shrink-0">
-                    {isCompleted ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : isActive ? (
-                      <Loader2 className="w-5 h-5 text-purple-500 animate-spin" />
-                    ) : (
-                      <step.icon className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${
-                      isActive
-                        ? 'text-purple-900 dark:text-purple-100'
-                        : isCompleted
-                        ? 'text-green-900 dark:text-green-100'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {step.title}
-                    </p>
-                    <p className={`text-xs ${
-                      isActive
-                        ? 'text-purple-700 dark:text-purple-200'
-                        : isCompleted
-                        ? 'text-green-700 dark:text-green-200'
-                        : 'text-gray-400 dark:text-gray-500'
-                    }`}>
-                      {step.description}
-                    </p>
-                  </div>
-                  {isActive && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-2 h-2 bg-purple-500 rounded-full"
-                    />
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-
-          <div className="text-center">
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+          {/* Simple Progress Bar */}
+          <div className="mb-4">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                animate={{ width: `${progressPercentage}%` }}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500 ease-out"
               />
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Step {currentStep + 1} of {steps.length}
-            </p>
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {Math.round(progressPercentage)}%
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Step {safeCurrentStep + 1} of {steps.length}
+              </span>
+            </div>
           </div>
 
-          {onClose && (
+          {/* Cancel Button */}
+          {onCancel && (
             <button
-              onClick={onClose}
-              className="mt-6 w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              onClick={onCancel}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Close
+              Cancel Generation
             </button>
           )}
         </motion.div>

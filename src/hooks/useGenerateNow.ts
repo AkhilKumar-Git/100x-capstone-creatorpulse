@@ -38,15 +38,15 @@ export const useGenerateNow = () => {
   // Memoize the steps array to prevent unnecessary re-renders
 // In useGenerateNow.ts, update the allSteps array:
 const allSteps = useMemo(() => [
-  { id: 'start', title: 'Starting Generation', description: 'Initializing...', status: 'pending' as const, icon: Play },
-  { id: 'fetch-sources', title: 'Fetching Active Sources', description: 'Retrieving sources...', status: 'pending' as const, icon: Database },
-  { id: 'edge-function', title: 'Calling Edge Function', description: 'Deploying serverless...', status: 'pending' as const, icon: Zap },
-  { id: 'ingest-x', title: 'Ingesting X (Twitter)', description: 'Fetching tweets...', status: 'pending' as const, icon: Twitter },
-  { id: 'ingest-youtube', title: 'Ingesting YouTube', description: 'Video analysis...', status: 'pending' as const, icon: Youtube },
-  { id: 'ingest-blogs', title: 'Ingesting Blogs & RSS', description: 'Content extraction...', status: 'pending' as const, icon: Rss },
-  { id: 'ai-analysis', title: 'AI Analysis', description: 'OpenAI processing...', status: 'pending' as const, icon: Brain },
-  { id: 'generate-drafts', title: 'Generating Drafts', description: 'Creating content...', status: 'pending' as const, icon: Edit },
-  { id: 'complete', title: 'Generation Complete', description: 'Success!', status: 'pending' as const, icon: Check }
+  { id: 'start', title: 'Starting Generation', description: 'Initializing your request...', status: 'pending' as const, icon: Play },
+  { id: 'fetch-sources', title: 'Fetching Sources', description: 'Gathering your active sources...', status: 'pending' as const, icon: Database },
+  { id: 'edge-function', title: 'Setting Up', description: 'Preparing the analysis engine...', status: 'pending' as const, icon: Zap },
+  { id: 'ingest-x', title: 'Analyzing X', description: 'Processing Twitter trends...', status: 'pending' as const, icon: Twitter },
+  { id: 'ingest-youtube', title: 'Analyzing YouTube', description: 'Processing video content...', status: 'pending' as const, icon: Youtube },
+  { id: 'ingest-blogs', title: 'Analyzing Blogs', description: 'Processing article content...', status: 'pending' as const, icon: Rss },
+  { id: 'ai-analysis', title: 'AI Processing', description: 'Generating insights...', status: 'pending' as const, icon: Brain },
+  { id: 'generate-drafts', title: 'Creating Content', description: 'Writing your drafts...', status: 'pending' as const, icon: Edit },
+  { id: 'complete', title: 'Almost Done', description: 'Finalizing your content...', status: 'pending' as const, icon: Check }
 ], []);
 
   const updateProgress = useCallback((step: string, progress: number) => {
@@ -85,14 +85,14 @@ const allSteps = useMemo(() => [
     try {
       // Simulate progress updates for each step
       const progressSteps = [
-        { step: 'fetch-sources', delay: 1500, progress: 20 },
-        { step: 'edge-function', delay: 3000, progress: 30 },
-        { step: 'ingest-x', delay: 4500, progress: 40 },
-        { step: 'ingest-youtube', delay: 6000, progress: 50 },
-        { step: 'ingest-blogs', delay: 7500, progress: 60 },
-        { step: 'ai-analysis', delay: 9000, progress: 70 },
-        { step: 'generate-drafts', delay: 10500, progress: 80 },
-        { step: 'complete', delay: 12000, progress: 90 }
+        { step: 'fetch-sources', delay: 1000, progress: 15 },
+        { step: 'edge-function', delay: 2500, progress: 25 },
+        { step: 'ingest-x', delay: 4000, progress: 35 },
+        { step: 'ingest-youtube', delay: 5500, progress: 45 },
+        { step: 'ingest-blogs', delay: 7000, progress: 55 },
+        { step: 'ai-analysis', delay: 8500, progress: 65 },
+        { step: 'generate-drafts', delay: 10000, progress: 75 },
+        { step: 'complete', delay: 11500, progress: 90 }
       ];
 
       // Start progress simulation
@@ -139,7 +139,7 @@ const allSteps = useMemo(() => [
       }
 
       // Complete the process
-      setTimeout(() => updateProgress('complete', 100), 12000);
+      setTimeout(() => updateProgress('complete', 100), 11500);
 
       setResult(data);
 
@@ -163,7 +163,7 @@ const allSteps = useMemo(() => [
       setTimeout(() => {
         setShowProgress(false);
         router.refresh();
-      }, 15000);
+      }, 13000);
 
       return data;
 

@@ -95,17 +95,16 @@ export const GenerateNowButton: React.FC<GenerateNowButtonProps> = ({
       </Button>
 
       {/* Dashboard Progress Overlay */}
-     {/* Dashboard Progress Overlay */}
-{progress && (
-  <DashboardGenerateProgressOverlay
-    isVisible={showProgress}
-    onClose={closeProgress}
-    currentStep={Number(progress.currentStep)}
-    steps={progress.steps}
-    overallProgress={progress.overallProgress}
-    onCancel={closeProgress}
-  />
-)}
+      {progress && (
+        <DashboardGenerateProgressOverlay
+          isVisible={showProgress}
+          onClose={closeProgress}
+          currentStep={progress.steps.findIndex(step => step.id === progress.currentStep)}
+          steps={progress.steps}
+          overallProgress={progress.overallProgress}
+          onCancel={closeProgress}
+        />
+      )}
     </>
   );
 };
