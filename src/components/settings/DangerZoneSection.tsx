@@ -105,13 +105,13 @@ export function DangerZoneSection() {
               </ul>
             </div>
             
-            <Button 
+            <GradientButton 
               onClick={handleExportData}
               disabled={isLoading.export}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isLoading.export ? 'Exporting...' : 'Export My Data'}
-            </Button>
+            </GradientButton>
           </div>
         </CardContent>
       </Card>
@@ -135,12 +135,12 @@ export function DangerZoneSection() {
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button 
-                variant="outline" 
+              <GradientButton 
+                 
                 className="border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
               >
                 Clear All Generated Content
-              </Button>
+              </GradientButton>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-[#1E1E1E] border-neutral-800">
               <AlertDialogHeader>
@@ -219,12 +219,12 @@ export function DangerZoneSection() {
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button 
-                variant="destructive" 
+              <GradientButton 
+                 
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 Delete My Account
-              </Button>
+              </GradientButton>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-[#1E1E1E] border-neutral-800">
               <AlertDialogHeader>

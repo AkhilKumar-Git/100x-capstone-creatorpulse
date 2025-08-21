@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { GradientButton } from '@/components/ui/gradient-button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +36,7 @@ import {
   PenTool
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { GenerateNowButton } from '@/components/GenerateNowButton';
 
 type Platform = 'x' | 'linkedin' | 'instagram';
 
@@ -251,14 +253,12 @@ export default function PostEditor() {
                   <PenTool className="h-5 w-5 text-purple-400" />
                   Post Editor
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => setFocusMode(!focusMode)}
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-neutral-800/50 transition-colors"
                 >
                   {focusMode ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-                </Button>
+                </button>
               </div>
               
               {/* Platform Selector */}
@@ -266,11 +266,9 @@ export default function PostEditor() {
                 <Label className="text-gray-400 text-sm font-medium">Platform:</Label>
                 <div className="flex items-center">
                   {(['x', 'linkedin', 'instagram'] as Platform[]).map((platform) => (
-                    <Button
+                    <button
                       key={platform}
-                      variant="ghost"
-                      size="sm"
-                      className={`relative h-10 px-4 transition-all duration-200 ${
+                      className={`relative h-10 px-4 transition-all duration-200 bg-transparent hover:bg-neutral-800/30 rounded-lg ${
                         postData.platform === platform 
                           ? 'text-white' 
                           : 'text-gray-400 hover:text-gray-300'
@@ -293,9 +291,19 @@ export default function PostEditor() {
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
-                    </Button>
+                    </button>
                   ))}
                 </div>
+              </div>
+              
+              {/* Generate Now Button */}
+              <div className="flex items-center gap-3 mt-4">
+                <GenerateNowButton
+                  variant="outline"
+                  size="sm"
+                  className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+                />
+                <span className="text-xs text-gray-500">Generate fresh content from your sources</span>
               </div>
             </CardHeader>
             
@@ -319,15 +327,13 @@ export default function PostEditor() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-white">Thread Builder</Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={addThread}
-                      className="text-purple-400 hover:text-purple-300"
+                      className="text-purple-400 hover:text-purple-300 px-3 py-2 rounded-lg hover:bg-purple-500/10 transition-colors"
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Add Tweet
-                    </Button>
+                    </button>
                   </div>
                   
                   <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -351,14 +357,14 @@ export default function PostEditor() {
                               {thread.characterCount}/{characterLimits.x}
                             </span>
                             {postData.threads && postData.threads.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
+                              <GradientButton
+                                
+                                
                                 onClick={() => removeThread(thread.id)}
                                 className="h-7 w-7 p-0 text-gray-400 hover:text-red-400 hover:bg-red-400/10"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </GradientButton>
                             )}
                           </div>
                         </div>
@@ -429,40 +435,40 @@ export default function PostEditor() {
               <div className="space-y-4 pt-6 border-t border-neutral-800">
                 <Label className="text-white font-medium">Schedule Post</Label>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="outline"
+                  <GradientButton
+                    
                     className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 h-11 justify-start"
                   >
                     <Calendar className="h-4 w-4 mr-2" />
                     Today
-                  </Button>
-                  <Button
-                    variant="outline"
+                  </GradientButton>
+                  <GradientButton
+                    
                     className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 h-11 justify-start"
                   >
                     <Clock className="h-4 w-4 mr-2" />
                     9:00 AM
-                  </Button>
+                  </GradientButton>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 pt-6">
-                <Button
-                  variant="outline"
+                <GradientButton
+                  
                   onClick={handleSaveDraft}
                   className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 h-11 flex-1"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isDraftSaved ? 'Saved!' : 'Save Draft'}
-                </Button>
-                <Button
+                </GradientButton>
+                <GradientButton
                   onClick={handleSchedulePost}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white h-11 flex-1"
                 >
                   <Send className="h-4 w-4 mr-2" />
                   Schedule Post
-                </Button>
+                </GradientButton>
               </div>
             </CardContent>
           </Card>

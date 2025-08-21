@@ -170,20 +170,20 @@ export function BillingSection() {
             </div>
             
             <div className="space-y-2">
-              <Button 
-                variant="outline" 
+              <GradientButton 
+                 
                 className="border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
               >
                 Change Plan
-              </Button>
-              <Button 
-                variant="outline" 
+              </GradientButton>
+              <GradientButton 
+                 
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10 w-full"
                 onClick={handleCancelSubscription}
                 disabled={isLoading}
               >
                 Cancel Subscription
-              </Button>
+              </GradientButton>
             </div>
           </div>
         </CardContent>
@@ -232,7 +232,7 @@ export function BillingSection() {
                   ))}
                 </ul>
                 
-                <Button
+                <GradientButton
                   onClick={() => handleChangePlan(plan.id)}
                   disabled={plan.current || isLoading}
                   className={`w-full ${
@@ -244,7 +244,7 @@ export function BillingSection() {
                   }`}
                 >
                   {plan.current ? 'Current Plan' : 'Upgrade'}
-                </Button>
+                </GradientButton>
               </div>
             ))}
           </div>
@@ -276,14 +276,14 @@ export function BillingSection() {
               </div>
             </div>
             
-            <Button 
-              variant="outline" 
+            <GradientButton 
+               
               onClick={handleUpdatePayment}
               disabled={isLoading}
               className="border-neutral-700 text-gray-300 hover:bg-neutral-800"
             >
               Update
-            </Button>
+            </GradientButton>
           </div>
         </CardContent>
       </Card>
@@ -322,14 +322,14 @@ export function BillingSection() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <GradientButton
+                      
+                      
                       className="text-purple-400 hover:text-purple-300"
                     >
                       <Download className="h-4 w-4 mr-1" />
                       Download
-                    </Button>
+                    </GradientButton>
                   </TableCell>
                 </TableRow>
               ))}

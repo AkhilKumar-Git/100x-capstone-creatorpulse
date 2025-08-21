@@ -84,19 +84,19 @@ export function InstagramPreview({ content, firstComment, media }: InstagramPrev
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="text-white hover:text-red-400 hover:bg-transparent p-0 h-auto">
+            <GradientButton   className="text-white hover:text-red-400 hover:bg-transparent p-0 h-auto">
               <Heart className="h-6 w-6" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-white hover:text-blue-400 hover:bg-transparent p-0 h-auto">
+            </GradientButton>
+            <GradientButton   className="text-white hover:text-blue-400 hover:bg-transparent p-0 h-auto">
               <MessageCircle className="h-6 w-6" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-white hover:text-blue-400 hover:bg-transparent p-0 h-auto">
+            </GradientButton>
+            <GradientButton   className="text-white hover:text-blue-400 hover:bg-transparent p-0 h-auto">
               <Send className="h-6 w-6" />
-            </Button>
+            </GradientButton>
           </div>
-          <Button variant="ghost" size="sm" className="text-white hover:text-yellow-400 hover:bg-transparent p-0 h-auto">
+          <GradientButton   className="text-white hover:text-yellow-400 hover:bg-transparent p-0 h-auto">
             <Bookmark className="h-6 w-6" />
-          </Button>
+          </GradientButton>
         </div>
 
         {/* Likes */}

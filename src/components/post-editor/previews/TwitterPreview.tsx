@@ -11,6 +11,7 @@ import {
   Bookmark,
   MoreHorizontal
 } from 'lucide-react';
+import { GradientButton } from '@/components/ui/gradient-button';
 
 interface ThreadTweet {
   id: string;
@@ -127,26 +128,26 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
               
               {/* Tweet Actions */}
               <div className="flex items-center justify-between w-full overflow-hidden">
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
                   <MessageCircle className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-1 text-xs">24</span>
                 </Button>
                 
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-green-400 hover:bg-green-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-green-400 hover:bg-green-400/10 p-2 h-auto min-w-0">
                   <Repeat2 className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-1 text-xs">12</span>
                 </Button>
                 
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-400 hover:bg-red-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-red-400 hover:bg-red-400/10 p-2 h-auto min-w-0">
                   <Heart className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-1 text-xs">89</span>
                 </Button>
                 
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
                   <Share className="h-4 w-4 flex-shrink-0" />
                 </Button>
                 
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
                   <Bookmark className="h-4 w-4 flex-shrink-0" />
                 </Button>
               </div>

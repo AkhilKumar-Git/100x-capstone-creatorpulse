@@ -155,13 +155,13 @@ export function AccountSecuritySection() {
               />
             </div>
             
-            <Button 
+            <GradientButton 
               onClick={handlePasswordChange}
               disabled={isLoading}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {isLoading ? 'Updating...' : 'Update Password'}
-            </Button>
+            </GradientButton>
           </div>
         </CardContent>
       </Card>
@@ -209,9 +209,9 @@ export function AccountSecuritySection() {
                 Your two-factor authentication is active. If you lose access to your authenticator app, 
                 use your backup codes to regain access.
               </p>
-              <Button variant="outline" size="sm" className="border-neutral-700 text-gray-300">
+              <GradientButton   className="border-neutral-700 text-gray-300">
                 View Backup Codes
-              </Button>
+              </GradientButton>
             </div>
           )}
         </CardContent>
@@ -230,9 +230,9 @@ export function AccountSecuritySection() {
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
+                <GradientButton   className="border-red-500/30 text-red-400 hover:bg-red-500/10">
                   Revoke All Others
-                </Button>
+                </GradientButton>
               </AlertDialogTrigger>
               <AlertDialogContent className="bg-[#1E1E1E] border-neutral-800">
                 <AlertDialogHeader>
@@ -289,14 +289,14 @@ export function AccountSecuritySection() {
                     </Badge>
                   )}
                   {!session.current && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <GradientButton
+                      
+                      
                       onClick={() => handleRevokeSession(session.id)}
                       className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </Button>
+                    </GradientButton>
                   )}
                 </div>
               </div>

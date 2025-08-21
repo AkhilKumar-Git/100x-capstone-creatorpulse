@@ -271,25 +271,25 @@ export function DeliveryTab() {
                   <div className="space-y-3">
                     <Label className="text-white">Drafts Per Week</Label>
                     <div className="flex items-center gap-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <GradientButton
+                        
+                        
                         onClick={() => setPostsPerWeek(Math.max(1, postsPerWeek - 1))}
                         className="h-8 w-8 p-0 bg-neutral-800 hover:bg-neutral-700 text-white"
                       >
                         -
-                      </Button>
+                      </GradientButton>
                       <span className="text-white font-medium text-lg min-w-[2rem] text-center">
                         {postsPerWeek}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <GradientButton
+                        
+                        
                         onClick={() => setPostsPerWeek(Math.min(14, postsPerWeek + 1))}
                         className="h-8 w-8 p-0 bg-neutral-800 hover:bg-neutral-700 text-white"
                       >
                         +
-                      </Button>
+                      </GradientButton>
                     </div>
                   </div>
                 )}
@@ -525,22 +525,22 @@ export function DeliveryTab() {
                   All times in {timezone}
                 </div>
                 <div className="flex items-center gap-1 bg-neutral-800 rounded-lg p-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <GradientButton
+                    
+                    
                     className={`h-8 px-3 ${viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-gray-400'}`}
                     onClick={() => setViewMode('list')}
                   >
                     <List className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  </GradientButton>
+                  <GradientButton
+                    
+                    
                     className={`h-8 px-3 ${viewMode === 'calendar' ? 'bg-purple-600 text-white' : 'text-gray-400'}`}
                     onClick={() => setViewMode('calendar')}
                   >
                     <Grid3X3 className="h-4 w-4" />
-                  </Button>
+                  </GradientButton>
                 </div>
               </div>
             </div>
@@ -556,15 +556,15 @@ export function DeliveryTab() {
                     <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-800/50 border border-neutral-800/50">
                       <div className="flex items-center gap-3">
                         <span className="text-gray-400 text-sm font-mono">9:59 PM</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <GradientButton
+                          
+                          
                           className="text-purple-400 hover:text-purple-300 p-0 h-auto"
                           onClick={() => handlePlanPost('2025-01-16', '9:59 PM')}
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           New
-                        </Button>
+                        </GradientButton>
                       </div>
                     </div>
                   </div>
@@ -577,15 +577,15 @@ export function DeliveryTab() {
                     <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-800/50 border border-neutral-800/50">
                       <div className="flex items-center gap-3">
                         <span className="text-gray-400 text-sm font-mono">6:35 PM</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <GradientButton
+                          
+                          
                           className="text-purple-400 hover:text-purple-300 p-0 h-auto"
                           onClick={() => handlePlanPost('2025-01-17', '6:35 PM')}
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           New
-                        </Button>
+                        </GradientButton>
                       </div>
                     </div>
                   </div>
@@ -613,9 +613,9 @@ export function DeliveryTab() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                      <GradientButton   className="text-gray-400 hover:text-white">
                         <Edit3 className="h-4 w-4" />
-                      </Button>
+                      </GradientButton>
                     </div>
                   </div>
                 ))}
@@ -677,21 +677,21 @@ export function DeliveryTab() {
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
+            <GradientButton
+              
               onClick={() => setIsDialogOpen(false)}
               className="border-neutral-700 text-gray-300 hover:bg-neutral-800"
             >
               Cancel
-            </Button>
-            <Button
+            </GradientButton>
+            <GradientButton
               onClick={handleGoToEditor}
               disabled={selectedFormats.length === 0}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
             >
               <PenTool className="h-4 w-4 mr-2" />
               Go to Editor
-            </Button>
+            </GradientButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

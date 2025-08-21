@@ -19,6 +19,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { GradientButton } from '../ui/gradient-button';
 
 type Platform = 'x' | 'linkedin' | 'instagram';
 type Tone = 'casual' | 'professional' | 'witty' | 'inspirational' | 'technical';
@@ -183,7 +184,7 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
               </Select>
             </div>
 
-            <Button
+            <GradientButton
               onClick={handleGenerate}
               disabled={!prompt.trim() || isGenerating}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
@@ -199,7 +200,7 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                   Generate Draft
                 </div>
               )}
-            </Button>
+            </GradientButton>
 
             {/* Quick Prompts */}
             <div className="space-y-3">
@@ -210,16 +211,16 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                   { icon: TrendingUp, text: 'Growth tips', color: 'bg-green-600/20 text-green-400 border-green-600/30' },
                   { icon: MessageSquare, text: 'Personal story', color: 'bg-blue-600/20 text-blue-400 border-blue-600/30' }
                 ].map((quickPrompt, index) => (
-                  <Button
+                  <GradientButton
                     key={index}
-                    variant="outline"
-                    size="sm"
+                    
+                    
                     onClick={() => setPrompt(`Write about ${quickPrompt.text.toLowerCase()} in the ${platform === 'x' ? 'tech' : platform === 'linkedin' ? 'business' : 'creator'} space`)}
                     className={`text-sm h-10 justify-start ${quickPrompt.color} hover:opacity-80`}
                   >
                     <quickPrompt.icon className="h-4 w-4 mr-2" />
                     {quickPrompt.text}
-                  </Button>
+                  </GradientButton>
                 ))}
               </div>
             </div>
@@ -257,42 +258,42 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2">
-                    <Button
+                    <GradientButton
                       onClick={() => onInsertContent(generatedContent.text)}
                       className="bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       <Copy className="h-4 w-4 mr-2" />
                       Insert to Editor
-                    </Button>
-                    <Button
-                      variant="outline"
+                    </GradientButton>
+                    <GradientButton
+                      
                       onClick={handleRegenerate}
                       className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700"
                     >
                       <RefreshCw className="h-4 w-4" />
-                    </Button>
+                    </GradientButton>
                   </div>
 
                   {/* Refinement Tools */}
                   <div className="space-y-4">
                     <label className="text-white text-sm font-medium">Refine Content</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <GradientButton
+                        
+                        
                         onClick={handleShorten}
                         className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 text-sm h-9"
                       >
                         Shorten
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </GradientButton>
+                      <GradientButton
+                        
+                        
                         onClick={handleExpand}
                         className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 text-sm h-9"
                       >
                         Expand
-                      </Button>
+                      </GradientButton>
                     </div>
                     <div className="space-y-2">
                       <label className="text-white text-xs font-medium text-gray-400">Change Tone</label>
@@ -315,9 +316,9 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                   <div className="space-y-3 pt-4 border-t border-neutral-800">
                     <label className="text-white text-sm font-medium">Rate this generation</label>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <GradientButton
+                        
+                        
                         onClick={() => handleFeedback('up')}
                         className={`${
                           feedback === 'up' 
@@ -326,10 +327,10 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                         }`}
                       >
                         <ThumbsUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </GradientButton>
+                      <GradientButton
+                        
+                        
                         onClick={() => handleFeedback('down')}
                         className={`${
                           feedback === 'down' 
@@ -338,7 +339,7 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                         }`}
                       >
                         <ThumbsDown className="h-4 w-4" />
-                      </Button>
+                      </GradientButton>
                       <span className="text-xs text-gray-400 ml-2">
                         Help us improve AI quality
                       </span>
@@ -346,8 +347,8 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                   </div>
 
                   {/* Start Over */}
-                  <Button
-                    variant="ghost"
+                  <GradientButton
+                    
                     onClick={() => {
                       setGeneratedContent(null);
                       setPrompt('');
@@ -356,7 +357,7 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                     className="w-full text-gray-400 hover:text-white hover:bg-neutral-800"
                   >
                     Start Over
-                  </Button>
+                  </GradientButton>
                 </motion.div>
               )}
             </AnimatePresence>

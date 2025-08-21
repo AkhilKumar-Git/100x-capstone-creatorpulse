@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { GradientButton } from "@/components/ui/gradient-button";
 
 interface FaqSectionProps extends React.HTMLAttributes<HTMLElement> {
   title: string;
@@ -77,9 +77,9 @@ const FaqSection = React.forwardRef<HTMLElement, FaqSectionProps>(
               <p className="text-xs text-muted-foreground mb-4">
                 {contactInfo.description}
               </p>
-              <Button size="sm" onClick={contactInfo.onContact}>
+              <GradientButton  onClick={contactInfo.onContact}>
                 {contactInfo.buttonText}
-              </Button>
+              </GradientButton>
             </motion.div>
           )}
         </div>
@@ -116,8 +116,8 @@ const FaqItem = React.forwardRef<
           : "hover:bg-muted/50"
       )}
     >
-      <Button
-        variant="ghost"
+      <GradientButton
+        
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-6 py-4 h-auto justify-between hover:bg-transparent"
       >
@@ -144,7 +144,7 @@ const FaqItem = React.forwardRef<
         >
           <ChevronDown className="h-4 w-4" />
         </motion.div>
-      </Button>
+      </GradientButton>
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div

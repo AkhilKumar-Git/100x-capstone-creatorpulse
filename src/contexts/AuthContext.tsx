@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { sbClient } from '@/lib/supabase/client';
 import { SettingsService } from '@/lib/settings';
 
 interface AuthContextType {
@@ -13,6 +13,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const supabase = sbClient();
+    
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -54,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    const supabase = sbClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -62,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const supabase = sbClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -82,10 +87,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    const supabase = sbClient();
     await supabase.auth.signOut();
   };
 
   const signInWithGoogle = async () => {
+    const supabase = sbClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -93,6 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
     });
     return { error };
+  };
+
+  const refreshSession = async () => {
+    const supabase = sbClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    setSession(session);
+    setUser(session?.user ?? null);
   };
 
   const value = {
@@ -103,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut,
     signInWithGoogle,
+    refreshSession,
   };
 
   return (

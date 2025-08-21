@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Custom color variables for moving border effect */
+:root {
+  --deepblue-500: #3b82f6;
+  --purple-500: #8b5cf6;
+}
+
 html {
   scroll-behavior: smooth;
 }

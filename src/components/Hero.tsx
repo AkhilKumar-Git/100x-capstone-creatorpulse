@@ -135,7 +135,7 @@ export default function Hero() {
               transition={{ duration: 0.6, delay: 0.3 }}
             >
               <AnimatedButton
-                size="sm"
+                
                 onClick={() => window.location.href = "/login"}
               >
                 Try Now
@@ -181,7 +181,7 @@ export default function Hero() {
                   </a>
                 ))}
                 <div className="pt-4">
-                  <AnimatedButton size="sm" className="w-full" onClick={() => window.location.href = "/login"}>
+                  <AnimatedButton  className="w-full" onClick={() => window.location.href = "/login"}>
                     Try Now
                   </AnimatedButton>
                 </div>
@@ -261,7 +261,7 @@ export default function Hero() {
             <div className="relative">
               {/* Glow effect */}
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
-              <AnimatedButton size="lg" className="relative" onClick={() => window.location.href = "/login"}>
+              <AnimatedButton  className="relative" onClick={() => window.location.href = "/login"}>
                 Try Now
               </AnimatedButton>
             </div>

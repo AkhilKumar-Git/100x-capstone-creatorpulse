@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { CustomButton } from '@/components/ui/custom-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +26,6 @@ import {
   Rss,
   Youtube,
   Hash,
-  Instagram,
-  Linkedin,
   Trash2,
   Plus,
   Loader2,
@@ -45,21 +43,19 @@ import {
 import { XIcon } from '@/components/ui/x-icon';
 import { toast } from 'sonner';
 
-// Types
-interface Source {
-  id: string;
-  type: 'x' | 'instagram' | 'linkedin' | 'rss' | 'youtube' | 'hashtag';
-  name: string;
-  identifier: string;
-  status: 'Active' | 'Paused';
-  health: 'healthy' | 'error' | 'warning';
-  analytics: {
-    trendsFound: number;
-    postsAnalyzed: number;
-    lastUpdate: string;
-  };
-}
+// Import client-side sources functions
+import { 
+  listSourcesClient, 
+  createSourceClient, 
+  deleteSourceClient, 
+  toggleSourceClient,
+  verifySourceClient,
+  type Source,
+  type CreateSourceInput
+} from '@/lib/sources';
+import { useAuth } from '@/contexts/AuthContext';
 
+// Types based on actual database schema
 interface FormInputs {
   x: string;
   instagram: string;
@@ -77,75 +73,7 @@ interface SuggestedSource {
   relevanceScore: number;
 }
 
-// Mock data with enhanced analytics
-const initialSources: Source[] = [
-  {
-    id: '1',
-    type: 'x',
-    name: '@elonmusk',
-    identifier: 'elonmusk',
-    status: 'Active',
-    health: 'healthy',
-    analytics: {
-      trendsFound: 8,
-      postsAnalyzed: 34,
-      lastUpdate: '2 hours ago'
-    }
-  },
-  {
-    id: '2',
-    type: 'instagram',
-    name: '@garyvee',
-    identifier: 'garyvee',
-    status: 'Active',
-    health: 'healthy',
-    analytics: {
-      trendsFound: 5,
-      postsAnalyzed: 22,
-      lastUpdate: '4 hours ago'
-    }
-  },
-  {
-    id: '3',
-    type: 'linkedin',
-    name: 'Reid Hoffman',
-    identifier: 'reidhoffman',
-    status: 'Active',
-    health: 'warning',
-    analytics: {
-      trendsFound: 3,
-      postsAnalyzed: 12,
-      lastUpdate: '1 day ago'
-    }
-  },
-  {
-    id: '4',
-    type: 'rss',
-    name: 'TechCrunch Feed',
-    identifier: 'https://techcrunch.com/feed/',
-    status: 'Paused',
-    health: 'error',
-    analytics: {
-      trendsFound: 0,
-      postsAnalyzed: 0,
-      lastUpdate: '3 days ago'
-    }
-  },
-  {
-    id: '5',
-    type: 'youtube',
-    name: 'Marques Brownlee',
-    identifier: '@MKBHD',
-    status: 'Active',
-    health: 'healthy',
-    analytics: {
-      trendsFound: 12,
-      postsAnalyzed: 18,
-      lastUpdate: '1 hour ago'
-    }
-  }
-];
-
+// Mock suggested sources (these could be AI-generated in the future)
 const suggestedSources: SuggestedSource[] = [
   {
     type: 'x',
@@ -155,24 +83,25 @@ const suggestedSources: SuggestedSource[] = [
     relevanceScore: 95
   },
   {
-    type: 'linkedin',
-    name: 'Simon Sinek',
-    identifier: 'simonsinek',
-    description: 'Leadership and motivation expert',
-    relevanceScore: 88
-  },
-  {
     type: 'youtube',
     name: 'Ali Abdaal',
     identifier: '@aliabdaal',
     description: 'Productivity and business content creator',
     relevanceScore: 92
+  },
+  {
+    type: 'rss',
+    name: 'TechCrunch',
+    identifier: 'https://techcrunch.com/feed/',
+    description: 'Latest tech news and startup updates',
+    relevanceScore: 88
   }
 ];
 
 export function EnhancedSourcesTab() {
-  const [sources, setSources] = useState<Source[]>(initialSources);
+  const [sources, setSources] = useState<Source[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
   const [activeTab, setActiveTab] = useState('x');
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,12 +115,53 @@ export function EnhancedSourcesTab() {
     hashtag: ''
   });
 
+  const { user, session } = useAuth();
+
+  // Load sources on component mount
+  useEffect(() => {
+    if (user) {
+      loadSources();
+    }
+  }, [user]);
+
+  // Load sources from database
+  const loadSources = async () => {
+    setIsLoadingSources(true);
+    try {
+      console.log('Current user state:', user);
+      console.log('Current session state:', session);
+      
+      const result = await listSourcesClient();
+      console.log('List sources result:', result);
+      
+      if (result.success && result.data) {
+        setSources(result.data);
+      } else {
+        console.error('Failed to load sources:', result.error);
+        if (result.error === 'Authentication required') {
+          toast.error('Please log in to view your sources');
+        } else {
+          toast.error('Failed to load sources');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading sources:', error);
+      if (error instanceof Error && error.message.includes('Authentication required')) {
+        toast.error('Please log in to view your sources');
+      } else {
+        toast.error('Error loading sources');
+      }
+    } finally {
+      setIsLoadingSources(false);
+    }
+  };
+
   // Filter sources based on search query
   const filteredSources = useMemo(() => {
     if (!searchQuery.trim()) return sources;
     return sources.filter(source => 
-      source.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      source.identifier.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (source.handle && source.handle.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (source.url && source.url.toLowerCase().includes(searchQuery.toLowerCase())) ||
       getSourceTypeName(source.type).toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [sources, searchQuery]);
@@ -201,15 +171,11 @@ export function EnhancedSourcesTab() {
     switch (type) {
       case 'x':
         return <XIcon className="h-5 w-5 text-white" />;
-      case 'instagram':
-        return <Instagram className="h-5 w-5 text-[#E4405F]" />;
-      case 'linkedin':
-        return <Linkedin className="h-5 w-5 text-[#0077B5]" />;
-      case 'rss':
-        return <Rss className="h-5 w-5 text-[#FF6600]" />;
       case 'youtube':
         return <Youtube className="h-5 w-5 text-[#FF0000]" />;
-      case 'hashtag':
+      case 'rss':
+        return <Rss className="h-5 w-5 text-[#FF6600]" />;
+      case 'blog':
         return <Hash className="h-5 w-5 text-[#64748B]" />;
       default:
         return <Rss className="h-5 w-5 text-[#64748B]" />;
@@ -219,11 +185,9 @@ export function EnhancedSourcesTab() {
   const getSourceTypeName = (type: Source['type']) => {
     switch (type) {
       case 'x': return 'X';
-      case 'instagram': return 'Instagram';
-      case 'linkedin': return 'LinkedIn';
-      case 'rss': return 'RSS Feed';
       case 'youtube': return 'YouTube';
-      case 'hashtag': return 'Hashtag';
+      case 'rss': return 'RSS Feed';
+      case 'blog': return 'Blog';
       default: return 'Unknown';
     }
   };
@@ -231,50 +195,50 @@ export function EnhancedSourcesTab() {
   const getPlaceholder = (type: string) => {
     switch (type) {
       case 'x': return 'Enter X handle...';
-      case 'instagram': return 'Enter Instagram handle...';
-      case 'linkedin': return 'Enter LinkedIn profile...';
+      case 'youtube': return 'Enter YouTube channel handle or ID...';
       case 'rss': return 'Enter RSS feed URL...';
-      case 'youtube': return 'Enter YouTube channel handle...';
-      case 'hashtag': return 'Enter hashtag (without #)...';
+      case 'blog': return 'Enter blog URL...';
       default: return 'Enter source...';
     }
   };
 
-  const getHealthIndicator = (health: Source['health'], analytics: Source['analytics']) => {
-    switch (health) {
-      case 'healthy':
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Healthy - Last updated {analytics.lastUpdate}</p>
-            </TooltipContent>
-          </Tooltip>
-        );
-      case 'warning':
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <div className="w-2 h-2 bg-orange-500 rounded-full" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Warning - Slow updates detected</p>
-            </TooltipContent>
-          </Tooltip>
-        );
-      case 'error':
-        return (
-          <Tooltip>
-            <TooltipTrigger>
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Error - Unable to fetch data</p>
-            </TooltipContent>
-          </Tooltip>
-        );
+  const getHealthIndicator = (source: Source) => {
+    // Simple health indicator based on source status and age
+    const isRecent = new Date(source.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
+    
+    if (source.active && isRecent) {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Healthy - Active and recent</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    } else if (source.active) {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="w-2 h-2 bg-orange-500 rounded-full" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Warning - Active but older source</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    } else {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="w-2 h-2 bg-red-500 rounded-full" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Inactive - Source is paused</p>
+          </TooltipContent>
+        </Tooltip>
+      );
     }
   };
 
@@ -287,32 +251,96 @@ export function EnhancedSourcesTab() {
     const currentInput = formInputs[activeTab as keyof FormInputs];
     if (!currentInput.trim()) return;
 
+    if (!user) {
+      toast.error('Please log in to add sources');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Map UI types to database types
+      let dbType: Source['type'];
+      let handle: string | null = null;
+      let url: string | null = null;
 
-      const newSource: Source = {
-        id: Date.now().toString(),
-        type: activeTab as Source['type'],
-        name: activeTab === 'x' || activeTab === 'instagram' ? `@${currentInput}` : 
-              activeTab === 'hashtag' ? `#${currentInput}` : 
-              currentInput,
-        identifier: currentInput,
-        status: 'Active',
-        health: 'healthy',
-        analytics: {
-          trendsFound: Math.floor(Math.random() * 10) + 1,
-          postsAnalyzed: Math.floor(Math.random() * 20) + 5,
-          lastUpdate: 'Just now'
+      switch (activeTab) {
+        case 'x':
+          dbType = 'x';
+          handle = currentInput.startsWith('@') ? currentInput.substring(1) : currentInput;
+          break;
+        case 'youtube':
+          dbType = 'youtube';
+          // YouTube handle can be a channel handle (@aliabdaal) or a channel ID (UC_x5XG1OV2P6uZZ5FSM9Ttw)
+          // We'll try to parse it as a handle first, then as a URL if it looks like a channel ID
+          if (currentInput.startsWith('@')) {
+            handle = currentInput.substring(1);
+          } else if (currentInput.includes('youtube.com/channel/') || currentInput.includes('youtube.com/user/')) {
+            // This is a channel URL, extract the ID
+            const urlMatch = currentInput.match(/youtube\.com\/channel\/([a-zA-Z0-9_-]+)/);
+            if (urlMatch) {
+              handle = urlMatch[1];
+            } else {
+              const userMatch = currentInput.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
+              if (userMatch) {
+                handle = userMatch[1];
+              }
+            }
+          } else {
+            // Assume it's a handle if it doesn't look like a URL
+            handle = currentInput;
+          }
+          break;
+        case 'rss':
+          dbType = 'rss';
+          url = currentInput;
+          break;
+        case 'blog':
+          dbType = 'blog';
+          url = currentInput;
+          break;
+        default:
+          dbType = 'x';
+          handle = currentInput;
+      }
+
+      // Verify source before adding
+      const verification = await verifySourceClient({
+        type: dbType,
+        handle: handle || undefined,
+        url: url || undefined
+      });
+
+      console.log('Verification result:', verification); // Debug log
+
+      if (!verification.ok) {
+        toast.error(`Verification failed: ${verification.reason}`);
+        return;
+      }
+
+      // Create source after successful verification
+      const result = await createSourceClient({
+        type: dbType,
+        handle: handle || undefined,
+        url: url || undefined
+      });
+
+      console.log('Create source result:', result); // Debug log
+
+      if (result.success) {
+        toast.success(`${getSourceTypeName(dbType)} source added successfully!`);
+        setFormInputs(prev => ({ ...prev, [activeTab]: '' }));
+        // Reload sources to get the updated list
+        await loadSources();
+      } else {
+        if (result.code === 'DUPLICATE') {
+          toast.error('This source already exists in your list');
+        } else {
+          toast.error(result.error || 'Failed to add source');
         }
-      };
-
-      setSources(prev => [...prev, newSource]);
-      setFormInputs(prev => ({ ...prev, [activeTab]: '' }));
-      toast.success(`${getSourceTypeName(activeTab as Source['type'])} source added successfully!`);
+      }
     } catch (error) {
+      console.error('Error adding source:', error);
       toast.error('Failed to add source. Please try again.');
     } finally {
       setIsLoading(false);
@@ -320,57 +348,99 @@ export function EnhancedSourcesTab() {
   };
 
   const handleToggleStatus = async (id: string) => {
+    if (!user) {
+      toast.error('Please log in to manage sources');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, [id]: true }));
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setSources(prev => prev.map(source => 
-        source.id === id 
-          ? { ...source, status: source.status === 'Active' ? 'Paused' : 'Active' }
-          : source
-      ));
-      toast.success('Source status updated');
+      const source = sources.find(s => s.id === id);
+      if (!source) return;
+
+      const result = await toggleSourceClient({
+        id,
+        active: !source.active
+      });
+
+      if (result.success) {
+        // Update local state
+        setSources(prev => prev.map(source => 
+          source.id === id 
+            ? { ...source, active: !source.active }
+            : source
+        ));
+        toast.success('Source status updated');
+      } else {
+        toast.error(result.error || 'Failed to update source status');
+      }
+    } catch (error) {
+      console.error('Error toggling source:', error);
+      toast.error('Failed to update source status');
     } finally {
       setLoadingStates(prev => ({ ...prev, [id]: false }));
     }
   };
 
   const handleDeleteSource = async (id: string) => {
+    if (!user) {
+      toast.error('Please log in to manage sources');
+      return;
+    }
+
     setLoadingStates(prev => ({ ...prev, [id]: true }));
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const result = await deleteSourceClient({ id });
       
-      setSources(prev => prev.filter(source => source.id !== id));
-      toast.success('Source removed successfully');
+      if (result.success) {
+        // Update local state
+        setSources(prev => prev.filter(source => source.id !== id));
+        toast.success('Source removed successfully');
+      } else {
+        toast.error(result.error || 'Failed to remove source');
+      }
+    } catch (error) {
+      console.error('Error deleting source:', error);
+      toast.error('Failed to remove source');
     } finally {
       setLoadingStates(prev => ({ ...prev, [id]: false }));
     }
   };
 
   const handleAddSuggestedSource = async (suggested: SuggestedSource) => {
-    try {
-      const newSource: Source = {
-        id: Date.now().toString(),
-        type: suggested.type,
-        name: suggested.name,
-        identifier: suggested.identifier,
-        status: 'Active',
-        health: 'healthy',
-        analytics: {
-          trendsFound: Math.floor(Math.random() * 10) + 1,
-          postsAnalyzed: Math.floor(Math.random() * 20) + 5,
-          lastUpdate: 'Just now'
-        }
-      };
+    if (!user) {
+      toast.error('Please log in to add sources');
+      return;
+    }
 
-      setSources(prev => [...prev, newSource]);
-      toast.success(`${suggested.name} added successfully!`);
-      setShowSuggestions(false);
+    try {
+      let handle: string | undefined = undefined;
+      let url: string | undefined = undefined;
+
+      if (suggested.type === 'x' || suggested.type === 'youtube') {
+        handle = suggested.identifier;
+      } else {
+        url = suggested.identifier;
+      }
+
+      const result = await createSourceClient({
+        type: suggested.type,
+        handle,
+        url
+      });
+
+      if (result.success) {
+        toast.success(`${suggested.name} added successfully!`);
+        setShowSuggestions(false);
+        // Reload sources to get the updated list
+        await loadSources();
+      } else {
+        toast.error(result.error || 'Failed to add suggested source');
+      }
     } catch (error) {
+      console.error('Error adding suggested source:', error);
       toast.error('Failed to add suggested source');
     }
   };
@@ -388,11 +458,10 @@ export function EnhancedSourcesTab() {
               {/* Source Type Selection */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-[#A0A0A0] mb-4">Choose Platform</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
                     { type: 'x', label: 'X', icon: <XIcon className="h-5 w-5 text-white" /> },
-                    { type: 'instagram', label: 'Instagram', icon: <Instagram className="h-5 w-5 text-[#E4405F]" /> },
-                    { type: 'linkedin', label: 'LinkedIn', icon: <Linkedin className="h-5 w-5 text-[#0077B5]" /> },
+                    { type: 'youtube', label: 'YouTube', icon: <Youtube className="h-5 w-5 text-[#FF0000]" /> },
                   ].map((platform) => (
                     <motion.button
                       key={platform.type}
@@ -411,11 +480,10 @@ export function EnhancedSourcesTab() {
                   ))}
                 </div>
                 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { type: 'youtube', label: 'YouTube', icon: <Youtube className="h-5 w-5 text-[#FF0000]" /> },
                     { type: 'rss', label: 'RSS Feed', icon: <Rss className="h-5 w-5 text-[#FF6600]" /> },
-                    { type: 'hashtag', label: 'Hashtag', icon: <Hash className="h-5 w-5 text-[#64748B]" /> },
+                    { type: 'blog', label: 'Blog', icon: <Hash className="h-5 w-5 text-[#64748B]" /> },
                   ].map((platform) => (
                     <motion.button
                       key={platform.type}
@@ -455,6 +523,13 @@ export function EnhancedSourcesTab() {
                     onChange={(e) => handleInputChange(activeTab as keyof FormInputs, e.target.value)}
                     className="bg-neutral-800/50 border-neutral-700 text-[#F5F5F5] placeholder:text-[#64748B] h-12"
                   />
+                  {/* Helper text for each source type */}
+                  <p className="text-xs text-[#64748B]">
+                    {activeTab === 'x' && 'Enter the X handle (e.g., "elonmusk" or "@elonmusk")'}
+                    {activeTab === 'youtube' && 'Enter YouTube channel handle (e.g., "@aliabdaal") or channel URL'}
+                    {activeTab === 'rss' && 'Enter the RSS feed URL (e.g., "https://techcrunch.com/feed/")'}
+                    {activeTab === 'blog' && 'Enter the blog URL (e.g., "https://example.com")'}
+                  </p>
                 </div>
                 
                 <motion.button
@@ -497,13 +572,13 @@ export function EnhancedSourcesTab() {
             <CardContent>
               <Dialog open={showSuggestions} onOpenChange={setShowSuggestions}>
                 <DialogTrigger asChild>
-                  <Button 
+                  <CustomButton 
                     variant="outline" 
                     className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Suggest Sources
-                  </Button>
+                  </CustomButton>
                 </DialogTrigger>
                 <DialogContent className="bg-[#1E1E1E] border-neutral-800 max-w-2xl">
                   <DialogHeader>
@@ -529,13 +604,13 @@ export function EnhancedSourcesTab() {
                             <p className="text-purple-400 text-xs">{source.relevanceScore}% match</p>
                           </div>
                         </div>
-                        <Button
+                        <CustomButton
                           onClick={() => handleAddSuggestedSource(source)}
                           size="sm"
                           className="bg-purple-500 hover:bg-purple-600"
                         >
                           Add
-                        </Button>
+                        </CustomButton>
                       </motion.div>
                     ))}
                   </div>
@@ -551,21 +626,71 @@ export function EnhancedSourcesTab() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#F5F5F5]">Connected Sources</CardTitle>
-                {sources.length > 0 && (
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#64748B]" />
-                    <Input
-                      placeholder="Search sources..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-64 bg-neutral-800/50 border-neutral-700 text-[#F5F5F5]"
-                    />
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  {sources.length > 0 && (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#64748B]" />
+                      <Input
+                        placeholder="Search sources..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 w-64 bg-neutral-800/50 border-neutral-700 text-[#F5F5F5]"
+                      />
+                    </div>
+                  )}
+                  <CustomButton
+                    onClick={loadSources}
+                    disabled={isLoadingSources}
+                    variant="outline"
+                    size="sm"
+                    className="border-neutral-700 text-[#A0A0A0] hover:bg-neutral-800/50"
+                  >
+                    {isLoadingSources ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Activity className="h-4 w-4" />
+                    )}
+                  </CustomButton>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              {filteredSources.length === 0 ? (
+              {!user ? (
+                // Not authenticated state
+                <motion.div 
+                  className="flex flex-col items-center justify-center py-12 text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Rss className="h-12 w-12 text-[#64748B] mb-4" />
+                  <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">
+                    Authentication Required
+                  </h3>
+                  <p className="text-[#A0A0A0] text-sm mb-4">
+                    Please log in to view and manage your sources.
+                  </p>
+                  <CustomButton
+                    onClick={() => window.location.href = '/login'}
+                    className="bg-purple-500 hover:bg-purple-600"
+                  >
+                    Go to Login
+                  </CustomButton>
+                </motion.div>
+              ) : isLoadingSources ? (
+                <motion.div 
+                  className="flex flex-col items-center justify-center py-12 text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Loader2 className="h-12 w-12 text-[#64748B] animate-spin" />
+                  <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">
+                    Loading sources...
+                  </h3>
+                  <p className="text-[#A0A0A0] text-sm">
+                    Please wait while we fetch your connected sources.
+                  </p>
+                </motion.div>
+              ) : filteredSources.length === 0 ? (
                 // Empty State
                 <motion.div 
                   className="flex flex-col items-center justify-center py-12 text-center"
@@ -607,25 +732,22 @@ export function EnhancedSourcesTab() {
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-[#F5F5F5] text-sm">
-                                {source.name}
+                                {source.handle || source.url || 'Unknown'}
                               </span>
-                              {getHealthIndicator(source.health, source.analytics)}
+                              {getHealthIndicator(source)}
                             </div>
                             <span className="text-[#A0A0A0] text-xs">
-                              {getSourceTypeName(source.type)} • {source.identifier}
+                              {getSourceTypeName(source.type)} • {source.handle || source.url}
                             </span>
-                            {/* Inline Analytics */}
+                            {/* Source Info */}
                             <div className="flex items-center gap-4 mt-1 text-xs">
                               <span className="text-purple-400 flex items-center gap-1">
-                                <TrendingUp className="h-3 w-3" />
-                                {source.analytics.trendsFound} trends
+                                <Clock className="h-3 w-3" />
+                                Added {new Date(source.created_at).toLocaleDateString()}
                               </span>
                               <span className="text-blue-400 flex items-center gap-1">
-                                <BarChart3 className="h-3 w-3" />
-                                {source.analytics.postsAnalyzed} posts
-                              </span>
-                              <span className="text-[#64748B]">
-                                Updated {source.analytics.lastUpdate}
+                                <Activity className="h-3 w-3" />
+                                {source.active ? 'Active' : 'Paused'}
                               </span>
                             </div>
                           </div>
@@ -633,17 +755,17 @@ export function EnhancedSourcesTab() {
 
                         <div className="flex items-center gap-3">
                           <Badge 
-                            variant={source.status === 'Active' ? 'default' : 'secondary'}
-                            className={source.status === 'Active' 
+                            variant={source.active ? 'default' : 'secondary'}
+                            className={source.active 
                               ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border-green-500/30' 
                               : 'bg-neutral-700 text-[#A0A0A0] hover:bg-neutral-600'
                             }
                           >
-                            {source.status}
+                            {source.active ? 'Active' : 'Paused'}
                           </Badge>
 
                           <Switch
-                            checked={source.status === 'Active'}
+                            checked={source.active}
                             onCheckedChange={() => handleToggleStatus(source.id)}
                             disabled={loadingStates[source.id]}
                             className="data-[state=checked]:bg-green-500"
@@ -651,7 +773,7 @@ export function EnhancedSourcesTab() {
 
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button
+                              <CustomButton
                                 variant="ghost"
                                 size="sm"
                                 disabled={loadingStates[source.id]}
@@ -662,7 +784,7 @@ export function EnhancedSourcesTab() {
                                 ) : (
                                   <Trash2 className="h-4 w-4" />
                                 )}
-                              </Button>
+                              </CustomButton>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="bg-[#1E1E1E] border-neutral-800">
                               <AlertDialogHeader>
@@ -670,7 +792,7 @@ export function EnhancedSourcesTab() {
                                   Are you sure?
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="text-[#A0A0A0]">
-                                  This will permanently remove the source "{source.name}" from your feed analysis. All associated data will be lost.
+                                  This will permanently remove the source from your feed analysis. All associated data will be lost.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

@@ -1,11 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       user_settings: {
@@ -130,7 +123,7 @@ export type Database = {
       }
       sources: {
         Row: {
-          id: number
+          id: string
           user_id: string
           type: 'x' | 'youtube' | 'rss' | 'blog'
           handle: string | null
@@ -139,7 +132,7 @@ export type Database = {
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
           type: 'x' | 'youtube' | 'rss' | 'blog'
           handle?: string | null
@@ -148,7 +141,7 @@ export type Database = {
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
           type?: 'x' | 'youtube' | 'rss' | 'blog'
           handle?: string | null
@@ -159,25 +152,25 @@ export type Database = {
       }
       style_samples: {
         Row: {
-          id: number
+          id: string
           user_id: string
-          platform: 'x' | 'linkedin' | 'instagram'
+          platform: 'x' | 'linkedin' | 'instagram' | 'twitter' | 'tiktok' | 'youtube' | 'blog'
           raw_text: string
           embedding: number[] | null
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
-          platform: 'x' | 'linkedin' | 'instagram'
+          platform: 'x' | 'linkedin' | 'instagram' | 'twitter' | 'tiktok' | 'youtube' | 'blog'
           raw_text: string
           embedding?: number[] | null
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
-          platform?: 'x' | 'linkedin' | 'instagram'
+          platform?: 'x' | 'linkedin' | 'instagram' | 'twitter' | 'tiktok' | 'youtube' | 'blog'
           raw_text?: string
           embedding?: number[] | null
           created_at?: string
@@ -185,7 +178,7 @@ export type Database = {
       }
       trend_items: {
         Row: {
-          id: number
+          id: string
           user_id: string
           source_type: string | null
           source_ref: string | null
@@ -197,7 +190,7 @@ export type Database = {
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
           source_type?: string | null
           source_ref?: string | null
@@ -209,7 +202,7 @@ export type Database = {
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
           source_type?: string | null
           source_ref?: string | null
@@ -223,7 +216,7 @@ export type Database = {
       }
       drafts: {
         Row: {
-          id: number
+          id: string
           user_id: string
           platform: 'x' | 'linkedin' | 'instagram'
           content: string
@@ -233,9 +226,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
-          platform: 'x' | 'linkedin' | 'instagram'
+          platform: 'x' | 'youtube' | 'rss' | 'blog'
           content: string
           based_on?: number | null
           status?: 'generated' | 'reviewed' | 'accepted' | 'rejected'
@@ -243,9 +236,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
-          platform?: 'x' | 'linkedin' | 'instagram'
+          platform?: 'x' | 'youtube' | 'rss' | 'blog'
           content?: string
           based_on?: number | null
           status?: 'generated' | 'reviewed' | 'accepted' | 'rejected'
@@ -255,30 +248,67 @@ export type Database = {
       }
       feedback: {
         Row: {
-          id: number
+          id: string
           user_id: string
-          draft_id: number
+          draft_id: string
           verdict: 'up' | 'down'
           edit_diff: string | null
           created_at: string
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
-          draft_id: number
+          draft_id: string
           verdict: 'up' | 'down'
           edit_diff?: string | null
           created_at?: string
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
-          draft_id?: number
+          draft_id?: string
           verdict?: 'up' | 'down'
           edit_diff?: string | null
           created_at?: string
         }
       }
     }
+    Functions: {
+      match_style_samples: {
+        Args: {
+          p_user_id: string
+          p_platform: string
+          p_query_embedding: number[]
+          p_match_count: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          platform: string
+          raw_text: string
+          embedding: number[] | null
+          created_at: string
+          similarity: number
+        }[]
+      }
+    }
   }
 }
+
+// Type helpers for better developer experience
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type Inserts<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type Updates<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+
+// Specific table types
+export type StyleSample = Tables<'style_samples'>
+export type StyleSampleInsert = Inserts<'style_samples'>
+export type StyleSampleUpdate = Updates<'style_samples'>
+
+export type Source = Tables<'sources'>
+export type SourceInsert = Inserts<'sources'>
+export type SourceUpdate = Updates<'sources'>
+
+export type Draft = Tables<'drafts'>
+export type DraftInsert = Inserts<'drafts'>
+export type DraftUpdate = Updates<'drafts'>

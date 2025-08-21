@@ -191,7 +191,7 @@ export function IntegrationsSection() {
         );
       default:
         return (
-          <Badge variant="secondary" className="bg-neutral-700 text-gray-400">
+          <Badge  className="bg-neutral-700 text-gray-400">
             Not Connected
           </Badge>
         );
@@ -201,63 +201,63 @@ export function IntegrationsSection() {
   const getActionButton = (integration: Integration) => {
     if (isLoading[integration.id]) {
       return (
-        <Button disabled size="sm" className="bg-neutral-700">
+        <GradientButton disabled  className="bg-neutral-700">
           Loading...
-        </Button>
+        </GradientButton>
       );
     }
 
     if (!integration.connected) {
       return (
-        <Button 
+        <GradientButton 
           onClick={() => handleConnect(integration.id)}
-          size="sm" 
+           
           className="bg-purple-600 hover:bg-purple-700 text-white"
         >
           Connect
-        </Button>
+        </GradientButton>
       );
     }
 
     if (integration.status === 'error') {
       return (
         <div className="flex gap-2">
-          <Button 
+          <GradientButton 
             onClick={() => handleReconnect(integration.id)}
-            size="sm" 
+             
             className="bg-orange-600 hover:bg-orange-700 text-white"
           >
             Reconnect
-          </Button>
-          <Button 
+          </GradientButton>
+          <GradientButton 
             onClick={() => handleDisconnect(integration.id)}
-            variant="outline"
-            size="sm" 
+            
+             
             className="border-red-500/30 text-red-400 hover:bg-red-500/10"
           >
             Disconnect
-          </Button>
+          </GradientButton>
         </div>
       );
     }
 
     return (
       <div className="flex gap-2">
-        <Button 
-          variant="outline"
-          size="sm" 
+        <GradientButton 
+          
+           
           className="border-neutral-700 text-gray-300 hover:bg-neutral-800"
         >
           Manage
-        </Button>
-        <Button 
+        </GradientButton>
+        <GradientButton 
           onClick={() => handleDisconnect(integration.id)}
-          variant="outline"
-          size="sm" 
+          
+           
           className="border-red-500/30 text-red-400 hover:bg-red-500/10"
         >
           Disconnect
-        </Button>
+        </GradientButton>
       </div>
     );
   };
@@ -391,12 +391,12 @@ export function IntegrationsSection() {
               Having trouble connecting an integration? Check out our documentation or contact support.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" className="border-neutral-700 text-gray-300">
+              <GradientButton  className="border-neutral-700 text-gray-300">
                 View Documentation
-              </Button>
-              <Button variant="outline" className="border-purple-500/30 text-purple-300">
+              </GradientButton>
+              <GradientButton  className="border-purple-500/30 text-purple-300">
                 Contact Support
-              </Button>
+              </GradientButton>
             </div>
           </div>
         </CardContent>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { GradientButton } from "@/components/ui/gradient-button";
 import { 
   LayoutDashboard, 
   Palette, 
@@ -71,13 +71,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <h1 className="text-xl font-bold text-foreground font-nothing-you">
             CreatorPulse
           </h1>
-          <Button
-            variant="ghost"
-            size="icon"
+          <GradientButton
+            
+            
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-6 w-6" />
-          </Button>
+          </GradientButton>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
           {navigation.map((item) => {
@@ -138,13 +138,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {/* Mobile header */}
         <div className="md:hidden">
           <div className="flex items-center justify-between h-16 px-4 bg-card border-b border-border">
-            <Button
-              variant="ghost"
-              size="icon"
+            <GradientButton
+              
+              
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-6 w-6" />
-            </Button>
+            </GradientButton>
             <h1 className="text-lg font-semibold text-foreground font-nothing-you">
               CreatorPulse
             </h1>

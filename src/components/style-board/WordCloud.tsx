@@ -18,12 +18,12 @@ export function WordCloud({ words, className = "" }: WordCloudProps) {
   const sortedWords = useMemo(() => {
     return words
       .sort((a, b) => b.frequency - a.frequency)
-      .slice(0, 30); // Limit to top 30 words
+      .slice(0, 20); // Limit to top 20 words for better layout
   }, [words]);
 
   const getWordSize = (frequency: number, maxFreq: number) => {
-    const minSize = 0.75;
-    const maxSize = 2.5;
+    const minSize = 0.6;
+    const maxSize = 1.4;
     const ratio = frequency / maxFreq;
     return minSize + (maxSize - minSize) * ratio;
   };
@@ -31,18 +31,22 @@ export function WordCloud({ words, className = "" }: WordCloudProps) {
   const getWordColor = (category?: string) => {
     switch (category) {
       case 'action':
-        return 'text-purple-400';
+        return 'from-purple-300 to-purple-500';
       case 'emotion':
-        return 'text-pink-400';
+        return 'from-pink-300 to-pink-500';
       case 'business':
-        return 'text-blue-400';
+        return 'from-blue-300 to-blue-500';
       case 'casual':
-        return 'text-green-400';
+        return 'from-green-300 to-green-500';
       case 'technical':
-        return 'text-orange-400';
+        return 'from-orange-300 to-orange-500';
       default:
-        return 'text-gray-300';
+        return 'from-gray-300 to-gray-500';
     }
+  };
+
+  const getWordBorderColor = () => {
+    return 'border-neutral-800/60'; // Uniform elegant black border
   };
 
   const maxFrequency = Math.max(...sortedWords.map(w => w.frequency));
@@ -53,56 +57,67 @@ export function WordCloud({ words, className = "" }: WordCloudProps) {
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900/50 to-neutral-800/30 rounded-lg" />
       
       {/* Word cloud */}
-      <div className="relative z-10 p-4 flex flex-wrap items-center justify-center gap-2 min-h-[200px] max-h-[300px] overflow-y-auto">
-        {sortedWords.slice(0, 20).map((word, index) => {
+      <div className="relative z-10 p-4 flex flex-wrap items-center justify-center gap-3 min-h-[180px] max-h-[250px] overflow-y-auto">
+        {sortedWords.map((word, index) => {
           const fontSize = getWordSize(word.frequency, maxFrequency);
           const colorClass = getWordColor(word.category);
+          const borderClass = getWordBorderColor();
           
           return (
-            <motion.span
+            <motion.div
               key={`${word.text}-${index}`}
-              className={`font-semibold cursor-pointer transition-all duration-200 hover:scale-110 ${colorClass}`}
+              className={`relative px-2.5 py-1.5 rounded-full cursor-pointer transition-all duration-300 hover:scale-105 ${borderClass} border-2 bg-gradient-to-r ${colorClass} shadow-sm hover:shadow-md`}
               style={{ 
-                fontSize: `${Math.min(fontSize, 1.8)}rem`, // Cap the max size
-                lineHeight: 1.2,
+                fontSize: `${Math.min(fontSize, 1.1)}rem`,
+                lineHeight: 1.1,
               }}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, scale: 0.5, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ 
-                duration: 0.5, 
-                delay: index * 0.03, // Faster animation
+                duration: 0.6, 
+                delay: index * 0.05,
                 ease: "easeOut"
               }}
               whileHover={{
-                scale: 1.1,
+                scale: 1.06,
+                y: -1,
                 transition: { duration: 0.2 }
               }}
               title={`Used ${word.frequency} times`}
             >
-              {word.text}
-            </motion.span>
+              {/* Subtle glow effect */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/10 to-transparent opacity-0 hover:opacity-60 transition-opacity duration-300" />
+              
+              {/* Text with subtle shadow */}
+              <span className="relative z-10 text-white font-medium drop-shadow-sm">
+                {word.text}
+              </span>
+              
+              {/* Subtle inner highlight for depth */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/5 to-transparent opacity-30" />
+            </motion.div>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div className="relative p-2 border-t border-neutral-800/50">
-        <div className="flex flex-wrap gap-2 text-xs justify-center">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-            <span className="text-gray-400">Action</span>
+      <div className="relative p-3 border-t border-neutral-800/50">
+        <div className="flex flex-wrap gap-3 text-xs justify-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-300 to-purple-500 rounded-full border border-neutral-800/60"></div>
+            <span className="text-gray-400 text-xs">Action</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
-            <span className="text-gray-400">Emotion</span>
+          <div className="flex items-center space-x-2">
+            <div className="w-2.5 h-2.5 bg-gradient-to-r from-pink-300 to-pink-500 rounded-full border border-neutral-800/60"></div>
+            <span className="text-gray-400 text-xs">Emotion</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            <span className="text-gray-400">Business</span>
+          <div className="flex items-center space-x-2">
+            <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-300 to-blue-500 rounded-full border border-neutral-800/60"></div>
+            <span className="text-gray-400 text-xs">Business</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-gray-400">Casual</span>
+          <div className="flex items-center space-x-2">
+            <div className="w-2.5 h-2.5 bg-gradient-to-r from-green-300 to-green-500 rounded-full border border-neutral-800/60"></div>
+            <span className="text-gray-400 text-xs">Casual</span>
           </div>
         </div>
       </div>

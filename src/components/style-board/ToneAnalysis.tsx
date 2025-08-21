@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts";
+
 interface ToneData {
   name: string;
   percentage: number;
@@ -16,6 +18,13 @@ interface ToneAnalysisProps {
 }
 
 export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
+  // Convert tone data to radar chart format
+  const chartData = tones.map(tone => ({
+    tone: tone.name,
+    value: tone.percentage,
+    color: tone.color
+  }));
+
   return (
     <div className={`h-full bg-[#1E1E1E] border border-neutral-800 rounded-xl p-6 ${className}`}>
       <div className="mb-6">
@@ -25,6 +34,7 @@ export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
         </p>
       </div>
 
+      {/* Tone Details */}
       <div className="space-y-4">
         {tones.map((tone, index) => (
           <motion.div
@@ -38,7 +48,6 @@ export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
               <div className="flex items-center space-x-3">
                 <span className="text-white font-medium text-sm">{tone.name}</span>
                 <Badge 
-                  variant="outline" 
                   className="text-xs"
                   style={{ borderColor: tone.color, color: tone.color }}
                 >
@@ -73,26 +82,7 @@ export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
         ))}
       </div>
 
-      {/* Formatting Habits Section */}
-      <div className="mt-8 pt-6 border-t border-neutral-800">
-        <h4 className="text-white font-medium mb-4">Formatting Habits</h4>
-        <div className="space-y-2">
-          {formattingHabits.map((habit, index) => (
-            <motion.div
-              key={index}
-              className="flex items-center space-x-3"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 + 0.5 }}
-            >
-              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full" />
-              </div>
-              <span className="text-gray-300 text-sm">{habit}</span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+
     </div>
   );
 }
@@ -131,10 +121,4 @@ export const mockToneData: ToneData[] = [
   }
 ];
 
-const formattingHabits = [
-  "Prefers short, punchy paragraphs",
-  "Frequently uses emojis for emphasis",
-  "Often starts posts with a question",
-  "Uses bullet points for clarity",
-  "Includes call-to-action statements"
-];
+

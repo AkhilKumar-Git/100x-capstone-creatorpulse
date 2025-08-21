@@ -362,13 +362,13 @@ export function NotificationsSection() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button 
+        <GradientButton 
           onClick={handleSaveAll}
           disabled={isLoading}
           className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
         >
           {isLoading ? 'Saving...' : 'Save All Preferences'}
-        </Button>
+        </GradientButton>
       </div>
     </div>
   );

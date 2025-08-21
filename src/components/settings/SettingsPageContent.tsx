@@ -104,9 +104,9 @@ export function SettingsPageContent() {
         <div className="w-80 flex-shrink-0">
           <nav className="space-y-2">
             {settingsNavItems.map((item) => (
-              <Button
+              <GradientButton
                 key={item.id}
-                variant="ghost"
+                
                 className={cn(
                   "w-full justify-start h-auto p-4 text-left space-y-1",
                   activeSection === item.id
@@ -134,7 +134,7 @@ export function SettingsPageContent() {
                     </div>
                   </div>
                 </div>
-              </Button>
+              </GradientButton>
             ))}
           </nav>
         </div>

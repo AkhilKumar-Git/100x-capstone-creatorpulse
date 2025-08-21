@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,51 +22,17 @@ import {
 } from 'lucide-react';
 import { XIcon } from '@/components/ui/x-icon';
 import { motion } from 'motion/react';
+import { GenerateNowButton } from '@/components/GenerateNowButton';
+import { PlatformFilter, type PlatformType } from '@/components/PlatformFilter';
+import { useTrendingTopics } from '@/hooks/useTrendingTopics';
 
-// Mock data for drafts
-const mockDrafts = [
-  {
-    id: 1,
-    platform: 'X',
-    topic: 'LLM Agents',
-    snippet: 'LLM Agents is reshaping how we think about content creation. Here\'s what I\'ve learned after diving deep into this trend: 1/ The traditional approach is broken 2/ AI-powered tools are game-changers 3/ Personal...'
-  },
-  {
-    id: 2,
-    platform: 'X', 
-    topic: 'Agents',
-    snippet: 'Agents is reshaping how we think about content creation. Here\'s what I\'ve learned after diving deep into this trend: 1/ The traditional approach is broken 2/ AI-powered tools are game-changers 3/ Personal voice...'
-  },
-  {
-    id: 3,
-    platform: 'X',
-    topic: 'LLM',
-    snippet: 'LLM is reshaping how we think about content creation. Here\'s what I\'ve learned after diving deep into this trend: 1/ The traditional approach is broken 2/ AI-powered tools are game-changers 3/ Personal voice still...'
-  }
-];
 
-// Mock data for trending topics
-const mockTrendingTopics = [
-  {
-    id: 1,
-    name: 'AI Content Creation',
-    momentum: '+156%'
-  },
-  {
-    id: 2,
-    name: 'Creator Economy', 
-    momentum: '+89%'
-  },
-  {
-    id: 3,
-    name: 'Social Media Trends',
-    momentum: '+67%'
-  }
-];
 
 export function DashboardOverview() {
   const userName = "Sarah";
   const router = useRouter();
+  const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformType[]>([]);
+  const { trendingTopics, personalDrafts, loading: topicsLoading, error: topicsError, refreshTopics } = useTrendingTopics();
 
   const handleTrendingTopicClick = (topicName: string) => {
     const encodedPrompt = encodeURIComponent(topicName);
@@ -114,6 +80,20 @@ export function DashboardOverview() {
         </div>
         
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <PlatformFilter
+              selectedPlatforms={selectedPlatforms}
+              onPlatformsChange={setSelectedPlatforms}
+              variant="outline"
+              size="sm"
+            />
+            <GenerateNowButton
+              includePlatforms={selectedPlatforms.length > 0 ? selectedPlatforms : undefined}
+              variant="default"
+              size="sm"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+            />
+          </div>
           <button 
             onClick={handleSettingsClick}
             className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
@@ -152,8 +132,8 @@ export function DashboardOverview() {
                 <BarChart3 className="h-4 w-4 text-purple-400" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-white mb-1">247</div>
-            <div className="text-green-400 text-sm font-medium">+12% vs last week</div>
+            <div className="text-3xl font-bold text-white mb-1">{personalDrafts.length}</div>
+            <div className="text-green-400 text-sm font-medium">From your sources</div>
           </CardContent>
         </Card>
 
@@ -220,50 +200,63 @@ export function DashboardOverview() {
               </button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {mockDrafts.map((draft, index) => (
-                <motion.div
-                  key={draft.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="group p-4 rounded-xl bg-neutral-800/50 border border-neutral-800/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20">
-                          <XIcon className="h-3 w-3 text-white" />
-                          <span className="text-xs text-purple-300 font-medium">{draft.platform}</span>
+              {topicsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                  <span className="ml-2 text-gray-400">Loading drafts...</span>
+                </div>
+              ) : personalDrafts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">No drafts yet. Use Generate Now to create your first draft!</p>
+                </div>
+              ) : (
+                personalDrafts.map((draft, index) => (
+                  <motion.div
+                    key={draft.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    className="group p-4 rounded-xl bg-neutral-800/50 border border-neutral-800/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20">
+                            <XIcon className="h-3 w-3 text-white" />
+                            <span className="text-xs text-purple-300 font-medium">{draft.platform}</span>
+                          </div>
+                          <Badge className={`text-xs ${
+                            draft.status === 'accepted' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                            draft.status === 'rejected' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                            draft.status === 'reviewed' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                            'bg-orange-500/20 text-orange-300 border-orange-500/30'
+                          }`}>
+                            {draft.status.charAt(0).toUpperCase() + draft.status.slice(1)}
+                          </Badge>
+                          <div className="flex items-center gap-1 text-gray-400 text-xs">
+                            <Clock className="h-3 w-3" />
+                            <span>{new Date(draft.created_at).toLocaleDateString()}</span>
+                          </div>
                         </div>
-                        <Badge className="bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 border-orange-500/30 text-xs">
-                          Approved
-                        </Badge>
-                        <div className="flex items-center gap-1 text-gray-400 text-xs">
-                          <Eye className="h-3 w-3" />
-                          <span>12.4K</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-gray-400 text-xs">
-                          <BarChart3 className="h-3 w-3" />
-                          <span>8.2%</span>
+                        <div>
+                          <h3 className="font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">
+                            {draft.content.length > 60 ? draft.content.substring(0, 60) + '...' : draft.content}
+                          </h3>
+                          <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
+                            {draft.content}
+                          </p>
                         </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">
-                          {draft.topic === 'LLM Agents' ? 'The future of AI in content creation...' : 
-                           draft.topic === 'Agents' ? '5 lessons learned from scaling a creator business' :
-                           'Content strategy that actually works in 2024'}
-                        </h3>
-                        <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
-                          {draft.snippet}
-                        </p>
-                      </div>
+                      <button 
+                        onClick={() => router.push(`/post-editor?draft=${draft.id}`)}
+                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
+                      >
+                        Review
+                      </button>
                     </div>
-                    <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105">
-                      Review
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -272,64 +265,158 @@ export function DashboardOverview() {
         <div className="space-y-6">
           <Card className="bg-[#1E1E1E] border-neutral-800">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-400" />
-                Trending Topics
-              </CardTitle>
-              <p className="text-gray-400 text-sm">Hot topics in your niche</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-400" />
+                    Trending Topics
+                  </CardTitle>
+                  <p className="text-gray-400 text-sm">Hot topics from your sources</p>
+                </div>
+                <button
+                  onClick={refreshTopics}
+                  disabled={topicsLoading}
+                  className="p-2 rounded-lg bg-neutral-800/50 hover:bg-neutral-700/50 transition-colors disabled:opacity-50"
+                  title="Refresh trending topics"
+                >
+                  <div className={`w-4 h-4 ${topicsLoading ? 'animate-spin' : ''}`}>
+                    {topicsLoading ? (
+                      <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                    ) : (
+                      <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {[
-                { name: 'AI-Generated Content', momentum: 95, color: 'from-purple-500 to-purple-600' },
-                { name: 'Creator Economy', momentum: 87, color: 'from-orange-500 to-orange-600' },
-                { name: 'Social Commerce', momentum: 72, color: 'from-blue-500 to-blue-600' },
-                { name: 'Video Marketing', momentum: 68, color: 'from-green-500 to-green-600' }
-              ].map((topic, index) => (
-                <motion.div
-                  key={topic.name}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  onClick={() => handleTrendingTopicClick(topic.name)}
-                  className="p-3 rounded-lg bg-neutral-800/50 border border-neutral-800/50 hover:border-purple-500/30 hover:bg-neutral-800/70 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-white text-sm group-hover:text-purple-300 transition-colors">{topic.name}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-green-400">{topic.momentum}</span>
-                      <TrendingUp className="h-3 w-3 text-green-400" />
+              {topicsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                  <span className="ml-2 text-gray-400 text-sm">Loading trends...</span>
+                </div>
+              ) : trendingTopics.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-gray-400 text-sm">No trending topics yet. Connect sources and use Generate Now!</p>
+                </div>
+              ) : (
+                trendingTopics.map((topic, index) => (
+                  <motion.div
+                    key={topic.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    onClick={() => handleTrendingTopicClick(topic.topic_name)}
+                    className="p-3 rounded-lg bg-neutral-800/50 border border-neutral-800/50 hover:border-purple-500/30 hover:bg-neutral-800/70 transition-all cursor-pointer group"
+                  >
+                                         <div className="flex items-center justify-between mb-2">
+                       <span className="font-medium text-white text-sm group-hover:text-purple-300 transition-colors line-clamp-1">
+                         {topic.topic_name}
+                       </span>
+                       <div className="flex items-center gap-1">
+                         <span className="text-xs font-bold text-green-400">{Math.round(topic.momentum_score)}</span>
+                         <TrendingUp className="h-3 w-3 text-green-400" />
+                       </div>
+                     </div>
+                     
+                     {/* Trending Metrics */}
+                     {topic.metrics && (
+                       <div className="flex items-center gap-2 mb-2">
+                         <div className="flex items-center gap-1 text-xs">
+                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                           <span className="text-blue-400">{Math.round(topic.metrics.engagement_rate || 0)}%</span>
+                         </div>
+                         <div className="flex items-center gap-1 text-xs">
+                           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                           <span className="text-orange-400">{Math.round(topic.metrics.velocity_score || 0)}</span>
+                         </div>
+                         <div className="flex items-center gap-1 text-xs">
+                           <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                           <span className="text-purple-400">{Math.round(topic.metrics.reach_multiplier || 0)}x</span>
+                         </div>
+                       </div>
+                     )}
+                    
+                    {/* Source Icons Row */}
+                    <div className="flex items-center gap-1 mb-2">
+                      {topic.source_icons.slice(0, 5).map((source, sourceIndex) => (
+                        <div
+                          key={source.id}
+                          className="w-6 h-6 rounded-full border-2 border-neutral-700 overflow-hidden"
+                          style={{ 
+                            zIndex: 5 - sourceIndex,
+                            marginLeft: sourceIndex > 0 ? '-4px' : '0'
+                          }}
+                        >
+                          {source.avatar_url ? (
+                            <img 
+                              src={source.avatar_url} 
+                              alt={source.type}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to platform icon if image fails
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full flex items-center justify-center text-xs font-bold ${
+                            source.type === 'x' ? 'bg-blue-500 text-white' :
+                            source.type === 'youtube' ? 'bg-red-500 text-white' :
+                            source.type === 'rss' ? 'bg-orange-500 text-white' :
+                            'bg-green-500 text-white'
+                          } ${source.avatar_url ? 'hidden' : ''}`}>
+                            {source.type === 'x' ? 'X' : 
+                             source.type === 'youtube' ? 'YT' :
+                             source.type === 'rss' ? 'RSS' : 'B'}
+                          </div>
+                        </div>
+                      ))}
+                      {topic.source_count > 5 && (
+                        <div className="w-6 h-6 rounded-full bg-neutral-600 text-white text-xs flex items-center justify-center font-bold ml-1">
+                          +{topic.source_count - 5}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-1.5">
-                    <div 
-                      className={`h-1.5 rounded-full bg-gradient-to-r ${topic.color}`}
-                      style={{ width: `${topic.momentum}%` }}
-                    ></div>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-400 group-hover:text-purple-400 transition-colors opacity-0 group-hover:opacity-100">
-                    Click to create content about this trend
-                  </div>
-                </motion.div>
-              ))}
+                    
+                    <div className="w-full bg-gray-700 rounded-full h-1.5">
+                      <div 
+                        className="h-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
+                        style={{ width: `${Math.min(topic.momentum_score, 100)}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-gray-400 group-hover:text-purple-400 transition-colors opacity-0 group-hover:opacity-100">
+                      Click to create content about this trend
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </CardContent>
           </Card>
 
           {/* Hot Trend Alert */}
-          <Card className="bg-[#1E1E1E] border-purple-500/30">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/20">
-                  <Zap className="h-4 w-4 text-purple-400" />
+          {trendingTopics.length > 0 && (
+            <Card className="bg-[#1E1E1E] border-purple-500/30">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-purple-500/20">
+                    <Zap className="h-4 w-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-purple-300 text-sm mb-1">🔥 Hot Trend Alert</h4>
+                    <p className="text-xs text-gray-300 leading-relaxed">
+                      "{trendingTopics[0]?.topic_name}" is trending with a score of {Math.round(trendingTopics[0]?.momentum_score || 0)}! 
+                      Perfect time to create content around this topic from your {trendingTopics[0]?.source_count || 0} sources.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-purple-300 text-sm mb-1">🔥 Hot Trend Alert</h4>
-                  <p className="text-xs text-gray-300 leading-relaxed">
-                    "AI-Generated Content" is spiking! Perfect time to create content around this topic.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </motion.div>
 
@@ -345,7 +432,12 @@ export function DashboardOverview() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold text-white mb-1">Ready for Today's Content?</h3>
-                <p className="text-gray-300">Your morning drafts are ready. Review and schedule your posts for maximum impact.</p>
+                <p className="text-gray-300">
+                  {personalDrafts.length > 0 
+                    ? `You have ${personalDrafts.length} draft${personalDrafts.length === 1 ? '' : 's'} ready. Review and schedule your posts for maximum impact.`
+                    : 'No drafts yet. Use Generate Now to create your first content!'
+                  }
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <button className="px-6 py-3 rounded-lg bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 transition-all duration-300 flex items-center gap-2">

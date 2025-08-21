@@ -115,8 +115,8 @@ const Combobox = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <GradientButton
+          
           aria-expanded={open}
           className={cn('w-40 justify-between capitalize', className)}
         >
@@ -124,7 +124,7 @@ const Combobox = ({
             ? data.find((item) => item.value === value)?.label
             : labels.button}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        </GradientButton>
       </PopoverTrigger>
       <PopoverContent className="w-40 p-0">
         <Command
@@ -366,12 +366,12 @@ export const CalendarDatePagination = ({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <Button onClick={() => handlePreviousMonth()} variant="ghost" size="icon">
+      <GradientButton onClick={() => handlePreviousMonth()}  >
         <ChevronLeftIcon size={16} />
-      </Button>
-      <Button onClick={() => handleNextMonth()} variant="ghost" size="icon">
+      </GradientButton>
+      <GradientButton onClick={() => handleNextMonth()}  >
         <ChevronRightIcon size={16} />
-      </Button>
+      </GradientButton>
     </div>
   );
 };

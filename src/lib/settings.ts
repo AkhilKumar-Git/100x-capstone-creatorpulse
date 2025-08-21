@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { sbClient } from './supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Types for user settings
@@ -61,6 +61,7 @@ export interface NotificationPreferences {
 export class SettingsService {
   // User Settings
   static async getUserSettings(userId: string): Promise<UserSettings | null> {
+    const supabase = sbClient();
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -76,6 +77,7 @@ export class SettingsService {
   }
 
   static async updateUserSettings(userId: string, updates: Partial<UserSettings>): Promise<boolean> {
+    const supabase = sbClient();
     const { error } = await supabase
       .from('user_settings')
       .update(updates)
@@ -91,6 +93,7 @@ export class SettingsService {
 
   // User Profile
   static async getUserProfile(userId: string): Promise<UserProfile | null> {
+    const supabase = sbClient();
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -109,6 +112,7 @@ export class SettingsService {
     try {
       console.log('Creating user profile with data:', profile);
       
+      const supabase = sbClient();
       const { error } = await supabase
         .from('user_profiles')
         .insert({
@@ -133,6 +137,7 @@ export class SettingsService {
   }
 
   static async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<boolean> {
+    const supabase = sbClient();
     const { error } = await supabase
       .from('user_profiles')
       .update({
@@ -151,6 +156,7 @@ export class SettingsService {
 
   // Notification Preferences
   static async getNotificationPreferences(userId: string): Promise<NotificationPreferences | null> {
+    const supabase = sbClient();
     const { data, error } = await supabase
       .from('notification_preferences')
       .select('*')
@@ -167,6 +173,7 @@ export class SettingsService {
 
   static async createNotificationPreferences(preferences: Omit<NotificationPreferences, 'created_at' | 'updated_at'>): Promise<boolean> {
     try {
+      const supabase = sbClient();
       const { error } = await supabase
         .from('notification_preferences')
         .insert({
@@ -190,6 +197,7 @@ export class SettingsService {
   }
 
   static async updateNotificationPreferences(userId: string, updates: Partial<NotificationPreferences>): Promise<boolean> {
+    const supabase = sbClient();
     const { error } = await supabase
       .from('notification_preferences')
       .update({
@@ -209,6 +217,7 @@ export class SettingsService {
   // Check if required tables exist
   static async checkTablesExist(): Promise<{ user_profiles: boolean; notification_preferences: boolean }> {
     try {
+      const supabase = sbClient();
       const { data: profilesData, error: profilesError } = await supabase
         .from('user_profiles')
         .select('user_id')

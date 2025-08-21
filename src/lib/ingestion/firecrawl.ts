@@ -10,7 +10,7 @@ const fcHeaders = () => ({
 export type ExtractResult = {
   url: string;
   markdown?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 };
 
 export async function extractUrls(urls: string[]): Promise<ExtractResult[]> {

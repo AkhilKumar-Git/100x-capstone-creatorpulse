@@ -166,13 +166,13 @@ export function ContentCalendar({ onPlanPost }: ContentCalendarProps) {
                   {feature.status.name}
                 </Badge>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
+              <GradientButton
+                
+                
                 className="opacity-0 group-hover:opacity-100 transition-opacity h-4 w-4 p-0 text-gray-400 hover:text-white"
               >
                 <Edit3 className="h-3 w-3" />
-              </Button>
+              </GradientButton>
             </div>
           </div>
         )}
@@ -220,14 +220,14 @@ export function ContentCalendar({ onPlanPost }: ContentCalendarProps) {
                 >
                   {hoveredDay === index && (
                     <div className="absolute inset-0 bg-purple-500/5 flex items-end justify-end p-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <GradientButton
+                        
+                        
                         className="h-6 w-6 p-0 bg-purple-600 hover:bg-purple-700 text-white opacity-80 hover:opacity-100"
                         onClick={() => handleAddPost(currentDate)}
                       >
                         <Plus className="h-3 w-3" />
-                      </Button>
+                      </GradientButton>
                     </div>
                   )}
                 </div>

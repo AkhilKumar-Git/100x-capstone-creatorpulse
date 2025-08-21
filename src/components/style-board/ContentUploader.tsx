@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { Upload, File, X, CheckCircle, BarChart3, Brain, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { GradientButton } from "@/components/ui/gradient-button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -117,14 +117,14 @@ export function ContentUploader({ onAnalyze, isAnalyzing, isAnalyzed = false, on
 
           {/* Action Buttons */}
           <div className="flex space-x-3">
-            <Button
+            <GradientButton
               onClick={onRetrain}
-              variant="outline"
+              
               className="flex-1 border-neutral-600 text-white hover:bg-neutral-800"
             >
               Add More Content
-            </Button>
-            <Button 
+            </GradientButton>
+            <GradientButton 
               className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
               onClick={() => {
                 // Scroll to the results section
@@ -135,7 +135,7 @@ export function ContentUploader({ onAnalyze, isAnalyzing, isAnalyzed = false, on
               }}
             >
               View Full Analysis
-            </Button>
+            </GradientButton>
           </div>
 
           {/* Success Message */}
@@ -198,18 +198,18 @@ export function ContentUploader({ onAnalyze, isAnalyzing, isAnalyzed = false, on
                   <div className="flex items-center space-x-3">
                     <File className="h-4 w-4 text-purple-400" />
                     <span className="text-white text-sm">{file.name}</span>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge  className="text-xs">
                       {(file.size / 1024).toFixed(1)} KB
                     </Badge>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <GradientButton
+                    
+                    
                     onClick={() => removeFile(index)}
                     className="h-6 w-6 p-0 hover:bg-red-500/20"
                   >
                     <X className="h-3 w-3" />
-                  </Button>
+                  </GradientButton>
                 </div>
               ))}
             </div>
@@ -234,7 +234,7 @@ export function ContentUploader({ onAnalyze, isAnalyzing, isAnalyzed = false, on
         </div>
 
         {/* Analyze Button */}
-        <Button
+        <GradientButton
           onClick={handleAnalyze}
           disabled={!canAnalyze || isAnalyzing}
           className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3"
@@ -247,7 +247,7 @@ export function ContentUploader({ onAnalyze, isAnalyzing, isAnalyzed = false, on
           ) : (
             "Analyze & Build Style Profile"
           )}
-        </Button>
+        </GradientButton>
       </CardContent>
     </Card>
   );
