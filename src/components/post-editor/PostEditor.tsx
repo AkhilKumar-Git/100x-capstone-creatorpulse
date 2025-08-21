@@ -137,19 +137,28 @@ export default function PostEditor() {
 
   const loadDraft = async (draftId: string) => {
     try {
+      console.log('🔄 Loading draft with ID:', draftId);
       const response = await fetch(`/api/drafts/${draftId}`);
       if (!response.ok) {
-        throw new Error('Failed to load draft');
+        throw new Error(`Failed to load draft: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const draft = data.draft;
+      
+      console.log('📥 Draft data received:', draft);
+
+      if (!draft) {
+        throw new Error('No draft data received');
+      }
 
       // Set platform first
       setPostData(prev => ({ ...prev, platform: draft.platform }));
+      console.log('🎯 Platform set to:', draft.platform);
 
       // Set content based on platform
       if (draft.platform === 'x' && draft.metadata?.threads) {
+        console.log('🧵 Loading X threads:', draft.metadata.threads);
         setPostData(prev => ({
           ...prev,
           content: draft.content,
@@ -158,6 +167,7 @@ export default function PostEditor() {
           firstComment: draft.metadata?.firstComment
         }));
       } else {
+        console.log('📝 Loading single content for platform:', draft.platform);
         setPostData(prev => ({
           ...prev,
           content: draft.content,
@@ -172,13 +182,20 @@ export default function PostEditor() {
       }
 
       if (draft.metadata?.originalTopic) {
+        console.log('📋 Setting original topic:', draft.metadata.originalTopic);
         setCurrentTopic(draft.metadata.originalTopic);
       }
 
+      // Set initial prompt if available
+      if (draft.metadata?.originalTopic) {
+        setInitialPrompt(draft.metadata.originalTopic);
+      }
+
+      console.log('✅ Draft loaded successfully');
       toast.success('Draft loaded successfully');
     } catch (error) {
-      console.error('Error loading draft:', error);
-      toast.error('Failed to load draft');
+      console.error('❌ Error loading draft:', error);
+      toast.error(`Failed to load draft: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -295,15 +312,34 @@ export default function PostEditor() {
     setIsSaving(true);
     
     try {
-      const draftData = {
-        platform: postData.platform,
-        content: postData.content,
-        title: postData.title,
-        firstComment: postData.firstComment,
-        threads: postData.threads,
+      // Structure the metadata properly for the database
+      const metadata: Record<string, unknown> = {
         originalTopic: currentTopic,
         generatedImageUrl: postData.generatedImageUrl
       };
+
+      // Add platform-specific metadata
+      if (postData.platform === 'x' && postData.threads) {
+        metadata.threads = postData.threads;
+      }
+      
+      if (postData.platform === 'linkedin' && postData.title) {
+        metadata.title = postData.title;
+      }
+      
+      if (postData.platform === 'instagram' && postData.firstComment) {
+        metadata.firstComment = postData.firstComment;
+      }
+
+      const draftData = {
+        platform: postData.platform,
+        content: postData.platform === 'x' && postData.threads && postData.threads.length > 0 
+          ? postData.threads[0].content 
+          : postData.content,
+        metadata
+      };
+
+      console.log('💾 Saving draft with data:', draftData);
 
       const response = await fetch('/api/save-draft', {
         method: 'POST',

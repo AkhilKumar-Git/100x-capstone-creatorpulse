@@ -1,6 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sbServer } from '@/lib/supabase/server';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await sbServer();
+    
+    // Get the current user session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const draftId = id;
+
+    // Fetch the draft with all its data
+    const { data: draft, error: fetchError } = await supabase
+      .from('drafts')
+      .select('*')
+      .eq('id', draftId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError || !draft) {
+      return NextResponse.json(
+        { error: 'Draft not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ draft });
+  } catch (error) {
+    console.error('Unexpected error in draft fetch API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

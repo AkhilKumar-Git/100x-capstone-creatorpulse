@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, TrendingUp, FileText, Users, Activity } from 'lucide-react';
 import { GenerateNowButton } from '@/components/GenerateNowButton';
 import { AvatarGroup } from '@/components/ui/avatar-group';
+import { useRouter } from 'next/navigation';
 
 interface TrendingTopic {
   id: string;
@@ -48,6 +49,8 @@ export function DashboardOverview({
   drafts, 
   onRegenerateClick 
 }: DashboardOverviewProps) {
+  const router = useRouter();
+
   // Debug logging
   console.log('DashboardOverview received:', {
     trendingTopics,
@@ -76,6 +79,17 @@ export function DashboardOverview({
     
     console.log('Generated avatars:', avatars);
     return avatars;
+  };
+
+  // Handle trending topic click
+  const handleTrendingTopicClick = (topic: TrendingTopic) => {
+    const encodedTopic = encodeURIComponent(topic.topic_name);
+    router.push(`/post-editor?prompt=${encodedTopic}`);
+  };
+
+  // Handle recent draft click
+  const handleRecentDraftClick = () => {
+    router.push('/your-drafts');
   };
 
   return (
@@ -124,6 +138,9 @@ export function DashboardOverview({
             <CardTitle className="text-[#F5F5F5] flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-purple-400" />
               Trending Topics (5 daily)
+              <span className="text-sm text-purple-400 opacity-60 ml-auto">
+                Click to create content
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -143,7 +160,8 @@ export function DashboardOverview({
                 {trendingTopics.map((topic, index) => (
                   <div
                     key={topic.id}
-                    className="p-4 rounded-lg border border-neutral-800/50 hover:border-neutral-700/50 transition-colors bg-neutral-800/20"
+                    className="p-4 rounded-lg border border-neutral-800/50 hover:border-purple-500/50 transition-all duration-200 bg-neutral-800/20 cursor-pointer hover:bg-neutral-800/40 hover:shadow-lg hover:shadow-purple-500/10 group"
+                    onClick={() => handleTrendingTopicClick(topic)}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
@@ -154,17 +172,17 @@ export function DashboardOverview({
                       </Badge>
                     </div>
                     
-                    <h4 className="text-[#F5F5F5] font-semibold mb-2">
+                    <h4 className="text-[#F5F5F5] font-semibold mb-2 group-hover:text-purple-300 transition-colors">
                       {topic.topic_name}
                     </h4>
                     
                     {topic.description && (
-                      <p className="text-[#A0A0A0] text-sm mb-3">
+                      <p className="text-[#A0A0A0] text-sm mb-3 group-hover:text-gray-300 transition-colors">
                         {topic.description}
                       </p>
                     )}
                     
-                                         {/* Source Attribution - This is the key component */}
+                    {/* Source Attribution - This is the key component */}
                      <div className="flex items-center gap-3">
                        <span className="text-[#F5F5F5] text-sm font-medium">
                          Sources:
@@ -180,6 +198,11 @@ export function DashboardOverview({
                          <span className="text-[#A0A0A0] text-sm">No sources</span>
                        )}
                      </div>
+                     
+                     {/* Click indicator */}
+                     <div className="mt-3 text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                       Click to create content about this topic →
+                     </div>
                   </div>
                 ))}
               </div>
@@ -189,10 +212,16 @@ export function DashboardOverview({
 
         {/* Right Column - Recent Drafts */}
         <Card className="bg-[#1E1E1E] border-neutral-800">
-          <CardHeader>
-            <CardTitle className="text-[#F5F5F5] flex items-center gap-2">
+          <CardHeader 
+            className="cursor-pointer hover:bg-neutral-800/30 transition-colors rounded-lg"
+            onClick={handleRecentDraftClick}
+          >
+            <CardTitle className="text-[#F5F5F5] flex items-center gap-2 group">
               <FileText className="h-5 w-5 text-purple-400" />
               Recent Drafts ({drafts.length})
+              <span className="text-sm text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                View all →
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -211,13 +240,14 @@ export function DashboardOverview({
                 {drafts.slice(0, 5).map((draft) => (
                   <div
                     key={draft.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-neutral-800/50 hover:border-neutral-700/50 transition-colors bg-neutral-800/20"
+                    className="flex items-center justify-between p-3 rounded-lg border border-neutral-800/50 hover:border-blue-500/50 transition-all duration-200 bg-neutral-800/20 cursor-pointer hover:bg-neutral-800/40 hover:shadow-lg hover:shadow-blue-500/10 group"
+                    onClick={handleRecentDraftClick}
                   >
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-[#F5F5F5] font-medium truncate">
+                      <h4 className="text-[#F5F5F5] font-medium truncate group-hover:text-blue-300 transition-colors">
                         {draft.title || 'Untitled Draft'}
                       </h4>
-                      <p className="text-[#A0A0A0] text-sm truncate">
+                      <p className="text-[#A0A0A0] text-sm truncate group-hover:text-gray-300 transition-colors">
                         {draft.content || 'No content'}
                       </p>
                     </div>
@@ -233,6 +263,11 @@ export function DashboardOverview({
                       >
                         {draft.status || 'draft'}
                       </Badge>
+                    </div>
+                    
+                    {/* Click indicator */}
+                    <div className="ml-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      →
                     </div>
                   </div>
                 ))}

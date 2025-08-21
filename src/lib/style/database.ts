@@ -145,20 +145,34 @@ export async function storeAnalysisData(
       throw new Error('Required analysis tables do not exist. Please run the database migrations first.');
     }
 
-    // Clear existing data first
+    // Clear existing data first and wait for completion
     console.log('Clearing existing analysis data for user:', userId);
-    const clearResults = await Promise.all([
-      supabase.from('style_vocabulary').delete().eq('user_id', userId),
-      supabase.from('style_tone_analysis').delete().eq('user_id', userId),
-      supabase.from('style_formatting_habits').delete().eq('user_id', userId)
-    ]);
     
-    // Log any clear errors
-    clearResults.forEach((result, index) => {
-      if (result.error) {
-        console.warn(`Clear operation ${index} had error:`, result.error);
+    try {
+      // Clear operations one by one to ensure they complete
+      const vocabClearResult = await supabase.from('style_vocabulary').delete().eq('user_id', userId);
+      if (vocabClearResult.error) {
+        console.warn('Vocabulary clear operation had error:', vocabClearResult.error);
       }
-    });
+      
+      const toneClearResult = await supabase.from('style_tone_analysis').delete().eq('user_id', userId);
+      if (toneClearResult.error) {
+        console.warn('Tone analysis clear operation had error:', toneClearResult.error);
+      }
+      
+      const habitsClearResult = await supabase.from('style_formatting_habits').delete().eq('user_id', userId);
+      if (habitsClearResult.error) {
+        console.warn('Formatting habits clear operation had error:', habitsClearResult.error);
+      }
+      
+      // Wait a moment to ensure clear operations complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      console.log('Clear operations completed');
+    } catch (clearError) {
+      console.warn('Error during clear operations:', clearError);
+      // Continue with insert operations even if clear fails
+    }
 
     // Store vocabulary data
     if (vocabulary.length > 0) {
@@ -196,9 +210,26 @@ export async function storeAnalysisData(
       
       console.log('Sample vocabulary data:', vocabData.slice(0, 3));
       
+      // Remove duplicates based on word text
+      const uniqueWords = new Map();
+      vocabData.forEach(word => {
+        if (word && !uniqueWords.has(word.word)) {
+          uniqueWords.set(word.word, word);
+        }
+      });
+      
+      const finalVocabData = Array.from(uniqueWords.values());
+      
+      if (finalVocabData.length === 0) {
+        console.warn('No valid vocabulary data to store after deduplication');
+        return;
+      }
+      
+      console.log('Sample vocabulary data:', finalVocabData.slice(0, 3));
+      
       const { data: vocabResult, error: vocabError } = await supabase
         .from('style_vocabulary')
-        .insert(vocabData)
+        .insert(finalVocabData)
         .select();
 
       if (vocabError) {
@@ -220,7 +251,16 @@ export async function storeAnalysisData(
     if (toneAnalysis.length > 0) {
       console.log('Storing tone analysis data:', toneAnalysis.length, 'tones');
       
-      const toneData = toneAnalysis.map(tone => {
+      // Remove duplicates based on tone_name
+      const uniqueTones = new Map();
+      toneAnalysis.forEach(tone => {
+        const toneName = String(tone.name || '').trim();
+        if (toneName && !uniqueTones.has(toneName)) {
+          uniqueTones.set(toneName, tone);
+        }
+      });
+      
+      const toneData = Array.from(uniqueTones.values()).map(tone => {
         const toneName = String(tone.name || '').trim();
         const percentage = Math.max(0, Math.min(100, Math.floor(Number(tone.percentage) || 0)));
         const color = String(tone.color || '#3B82F6').trim();
@@ -261,17 +301,52 @@ export async function storeAnalysisData(
           fullError: toneError
         });
         console.error('Sample failed tone data:', toneData.slice(0, 2));
-        throw new Error(`Tone analysis storage failed: ${toneError.message || 'Unknown error'}`);
+        
+        // Check if it's a duplicate key violation
+        if (toneError.code === '23505' || toneError.message.includes('duplicate key')) {
+          console.warn('Duplicate tone names detected, attempting to update existing records...');
+          
+          // Try to update existing records instead
+          const updatePromises = toneData
+            .filter(tone => tone !== null)
+            .map(tone => 
+              supabase
+                .from('style_tone_analysis')
+                .update({
+                  percentage: tone!.percentage,
+                  color: tone!.color,
+                  description: tone!.description,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', tone!.user_id)
+                .eq('tone_name', tone!.tone_name)
+            );
+          
+          const updateResults = await Promise.all(updatePromises);
+          const updateErrors = updateResults.filter(result => result.error);
+          
+          if (updateErrors.length > 0) {
+            console.error('Some tone updates failed:', updateErrors);
+            throw new Error(`Tone analysis update failed: ${updateErrors[0].error?.message || 'Unknown error'}`);
+          }
+          
+          console.log('Tone analysis updated successfully');
+        } else {
+          throw new Error(`Tone analysis storage failed: ${toneError.message || 'Unknown error'}`);
+        }
+      } else {
+        console.log('Tone analysis stored successfully:', toneResult?.length, 'records');
       }
-      
-      console.log('Tone analysis stored successfully:', toneResult?.length, 'records');
     }
 
     // Store formatting habits
     if (formattingHabits.length > 0) {
       console.log('Storing formatting habits:', formattingHabits.length, 'habits');
       
-      const habitsData = formattingHabits.map(habit => {
+      // Remove duplicates
+      const uniqueHabits = [...new Set(formattingHabits)];
+      
+      const habitsData = uniqueHabits.map(habit => {
         const habitText = String(habit || '').trim();
         
         if (!habitText) {
@@ -291,11 +366,26 @@ export async function storeAnalysisData(
         return;
       }
       
-      console.log('Sample habits data:', habitsData.slice(0, 2));
+      // Remove duplicates based on habit_text
+      const uniqueHabitsMap = new Map();
+      habitsData.forEach(habit => {
+        if (habit && !uniqueHabitsMap.has(habit.habit_text)) {
+          uniqueHabitsMap.set(habit.habit_text, habit);
+        }
+      });
+      
+      const finalHabitsData = Array.from(uniqueHabitsMap.values());
+      
+      if (finalHabitsData.length === 0) {
+        console.warn('No valid formatting habits data to store after deduplication');
+        return;
+      }
+      
+      console.log('Sample habits data:', finalHabitsData.slice(0, 2));
       
       const { data: habitsResult, error: habitsError } = await supabase
         .from('style_formatting_habits')
-        .insert(habitsData)
+        .insert(finalHabitsData)
         .select();
 
       if (habitsError) {

@@ -43,13 +43,8 @@ import {
 import { XIcon } from '@/components/ui/x-icon';
 import { toast } from 'sonner';
 
-// Import client-side sources functions
+// Import types
 import { 
-  listSourcesClient, 
-  createSourceClient, 
-  deleteSourceClient, 
-  toggleSourceClient,
-  verifySourceClient,
   type Source,
   type CreateSourceInput
 } from '@/lib/sources';
@@ -120,33 +115,25 @@ export function EnhancedSourcesTab() {
     }
   }, [user]);
 
-  // Load sources from database
+    // Load sources from database
   const loadSources = async () => {
     setIsLoadingSources(true);
     try {
       console.log('Current user state:', user);
       console.log('Current session state:', session);
       
-      const result = await listSourcesClient();
-      console.log('List sources result:', result);
+      const response = await fetch('/api/sources');
+      const result = await response.json();
       
       if (result.success && result.data) {
         setSources(result.data);
       } else {
         console.error('Failed to load sources:', result.error);
-        if (result.error === 'Authentication required') {
-          toast.error('Please log in to view your sources');
-        } else {
-          toast.error('Failed to load sources');
-        }
+        toast.error('Failed to load sources');
       }
     } catch (error) {
       console.error('Error loading sources:', error);
-      if (error instanceof Error && error.message.includes('Authentication required')) {
-        toast.error('Please log in to view your sources');
-      } else {
-        toast.error('Error loading sources');
-      }
+      toast.error('Error loading sources');
     } finally {
       setIsLoadingSources(false);
     }
@@ -302,26 +289,20 @@ export function EnhancedSourcesTab() {
           handle = currentInput;
       }
 
-      // Verify source before adding
-      const verification = await verifySourceClient({
-        type: dbType,
-        handle: handle || undefined,
-        url: url || undefined
+      // Create source directly using the API
+      const response = await fetch('/api/sources', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: dbType,
+          handle: handle || undefined,
+          url: url || undefined
+        }),
       });
 
-      console.log('Verification result:', verification); // Debug log
-
-      if (!verification.ok) {
-        toast.error(`Verification failed: ${verification.reason}`);
-        return;
-      }
-
-      // Create source after successful verification
-      const result = await createSourceClient({
-        type: dbType,
-        handle: handle || undefined,
-        url: url || undefined
-      });
+      const result = await response.json();
 
       console.log('Create source result:', result); // Debug log
 
@@ -331,7 +312,7 @@ export function EnhancedSourcesTab() {
         // Reload sources to get the updated list
         await loadSources();
       } else {
-        if (result.code === 'DUPLICATE') {
+        if (result.error === 'This source already exists') {
           toast.error('This source already exists in your list');
         } else {
           toast.error(result.error || 'Failed to add source');
@@ -357,10 +338,17 @@ export function EnhancedSourcesTab() {
       const source = sources.find(s => s.id === id);
       if (!source) return;
 
-      const result = await toggleSourceClient({
-        id,
-        active: !source.active
+      const response = await fetch(`/api/sources/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          active: !source.active
+        }),
       });
+
+      const result = await response.json();
 
       if (result.success) {
         // Update local state
@@ -390,7 +378,11 @@ export function EnhancedSourcesTab() {
     setLoadingStates(prev => ({ ...prev, [id]: true }));
     
     try {
-      const result = await deleteSourceClient({ id });
+      const response = await fetch(`/api/sources/${id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
       
       if (result.success) {
         // Update local state
@@ -423,11 +415,19 @@ export function EnhancedSourcesTab() {
         url = suggested.identifier;
       }
 
-      const result = await createSourceClient({
-        type: suggested.type,
-        handle,
-        url
+      const response = await fetch('/api/sources', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: suggested.type,
+          handle,
+          url
+        }),
       });
+
+      const result = await response.json();
 
       if (result.success) {
         toast.success(`${suggested.name} added successfully!`);

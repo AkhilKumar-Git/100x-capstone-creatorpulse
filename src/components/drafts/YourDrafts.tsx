@@ -180,13 +180,55 @@ export default function YourDrafts() {
   });
 
   const renderPreview = (draft: Draft) => {
+    console.log('🎨 Rendering preview for draft:', draft);
+    console.log('📱 Platform:', draft.platform);
+    console.log('📝 Content:', draft.content);
+    console.log('🔧 Metadata:', draft.metadata);
+    console.log('🔧 Metadata type:', typeof draft.metadata);
+    console.log('🔧 Metadata keys:', draft.metadata ? Object.keys(draft.metadata) : 'null');
+    
     switch (draft.platform) {
       case 'x':
-        const threads = draft.metadata?.threads || [{ 
-          id: '1', 
-          content: draft.content, 
-          characterCount: draft.content.length 
-        }];
+        console.log('🐦 Processing X platform draft');
+        console.log('🧵 Threads from metadata:', draft.metadata?.threads);
+        console.log('🧵 Threads type:', typeof draft.metadata?.threads);
+        console.log('🧵 Threads length:', draft.metadata?.threads?.length);
+        
+        let threads = draft.metadata?.threads;
+        
+        // If no threads in metadata, try to parse the content for numbered tweets
+        if (!threads || !Array.isArray(threads) || threads.length === 0) {
+          console.log('🔍 No threads found in metadata, attempting to parse content');
+          
+          // Check if content contains numbered parts (1/, 2/, 3/, etc.)
+          const numberedPattern = /(\d+\/.*?)(?=\d+\/|$)/g;
+          const matches = [];
+          let match;
+          
+          while ((match = numberedPattern.exec(draft.content)) !== null) {
+            matches.push(match[1]);
+          }
+          
+          if (matches && matches.length > 1) {
+            console.log('🔍 Found numbered content, creating threads:', matches);
+            threads = matches.map((match, index) => ({
+              id: (index + 1).toString(),
+              content: match.trim(),
+              characterCount: match.trim().length
+            }));
+          } else {
+            console.log('🔍 No numbered content found, using single tweet');
+            threads = [{ 
+              id: '1', 
+              content: draft.content, 
+              characterCount: draft.content.length 
+            }];
+          }
+        }
+        
+        console.log('🧵 Final threads for X preview:', threads);
+        console.log('🧵 Threads array length:', threads.length);
+        
         return <TwitterPreview threads={threads} />;
       case 'linkedin':
         return (

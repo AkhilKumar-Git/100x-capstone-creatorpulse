@@ -25,6 +25,10 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
   // Ensure threads is always an array
   const safeThreads = threads || [{ id: '1', content: '', characterCount: 0 }];
   
+  console.log('🐦 TwitterPreview received threads:', threads);
+  console.log('🛡️ Safe threads after fallback:', safeThreads);
+  console.log('📊 Thread count:', safeThreads.length);
+  
   const formatContent = (content: string) => {
     if (!content || !content.trim()) return 'Start typing to see your post preview...';
     
