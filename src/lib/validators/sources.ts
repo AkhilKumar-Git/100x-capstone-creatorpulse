@@ -109,7 +109,7 @@ export type SourceRecord = z.infer<typeof SourceRecordSchema>;
 // Helper function to get user-friendly error messages
 export function getSourceValidationError(error: z.ZodError): string {
   try {
-    const firstError = (error as any).errors?.[0];
+    const firstError = error.issues?.[0];
     
     if (!firstError) {
       return 'Invalid input. Please check your source details.';

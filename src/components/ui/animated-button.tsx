@@ -4,10 +4,14 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import React from "react";
 
-interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AnimatedButtonProps {
   children: React.ReactNode;
   variant?: "primary" | "secondary";
   size?: "sm" | "md" | "lg";
+  className?: string;
+  disabled?: boolean;
+  onClick?: () => void;
+  type?: "button" | "submit" | "reset";
 }
 
 export function AnimatedButton({

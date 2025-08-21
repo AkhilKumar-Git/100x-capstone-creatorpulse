@@ -82,7 +82,7 @@ export async function embedAndCreateStyleSample(
 
     // Validate platform against database schema
     const validPlatforms = ['x', 'linkedin', 'instagram', 'twitter', 'tiktok', 'youtube', 'blog'] as const;
-    if (!validPlatforms.includes(platform as any)) {
+    if (!validPlatforms.includes(platform as typeof validPlatforms[number])) {
       throw new Error(`Invalid platform: ${platform}. Must be one of: ${validPlatforms.join(', ')}`);
     }
 
@@ -134,7 +134,7 @@ export async function updateStyleSampleWithEmbedding(
   try {
     // Validate platform against database schema
     const validPlatforms = ['x', 'linkedin', 'instagram', 'twitter', 'tiktok', 'youtube', 'blog'] as const;
-    if (!validPlatforms.includes(platform as any)) {
+    if (!validPlatforms.includes(platform as typeof validPlatforms[number])) {
       throw new Error(`Invalid platform: ${platform}. Must be one of: ${validPlatforms.join(', ')}`);
     }
 

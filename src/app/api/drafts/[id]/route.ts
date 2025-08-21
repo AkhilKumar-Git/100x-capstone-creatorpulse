@@ -3,9 +3,10 @@ import { sbServer } from '@/lib/supabase/server';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await sbServer();
     
     // Get the current user session
@@ -18,7 +19,7 @@ export async function DELETE(
       );
     }
 
-    const draftId = params.id;
+    const draftId = id;
 
     // First verify the draft belongs to the current user
     const { data: existingDraft, error: fetchError } = await supabase

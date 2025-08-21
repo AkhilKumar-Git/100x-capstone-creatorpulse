@@ -26,10 +26,19 @@ interface Source {
   avatar: string;
 }
 
+interface Draft {
+  id: string;
+  title: string;
+  content: string;
+  platform: string;
+  status: string;
+  created_at: string;
+}
+
 interface DashboardOverviewProps {
   trendingTopics: TrendingTopic[];
   sources: Source[];
-  drafts: any[];
+  drafts: Draft[];
   onRegenerateClick: () => void;
 }
 
