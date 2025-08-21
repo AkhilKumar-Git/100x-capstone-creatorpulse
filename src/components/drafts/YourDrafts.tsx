@@ -41,6 +41,7 @@ interface Draft {
   user_id: string;
   platform: Platform;
   content: string;
+  draft_title?: string | null;
   based_on: number | null;
   status: 'generated' | 'reviewed' | 'accepted' | 'rejected';
   created_at: string;
@@ -329,7 +330,7 @@ export default function YourDrafts() {
                       </div>
                       
                       <p className="text-white text-sm font-medium line-clamp-2 mb-2">
-                        {draft.metadata?.originalTopic || 'Draft Content'}
+                        {draft.draft_title || draft.metadata?.originalTopic || draft.metadata?.title || 'Draft Content'}
                       </p>
                       
                       <p className="text-gray-400 text-xs line-clamp-2">

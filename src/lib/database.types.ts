@@ -220,6 +220,7 @@ export interface Database {
           user_id: string
           platform: 'x' | 'linkedin' | 'instagram'
           content: string
+          draft_title: string | null
           based_on: number | null
           status: 'generated' | 'reviewed' | 'accepted' | 'rejected'
           metadata: Record<string, unknown> | null
@@ -231,6 +232,7 @@ export interface Database {
           user_id: string
           platform: 'x' | 'linkedin' | 'instagram'
           content: string
+          draft_title?: string | null
           based_on?: number | null
           status?: 'generated' | 'reviewed' | 'accepted' | 'rejected'
           metadata?: Record<string, unknown> | null
@@ -242,6 +244,7 @@ export interface Database {
           user_id?: string
           platform?: 'x' | 'linkedin' | 'instagram'
           content?: string
+          draft_title?: string | null
           based_on?: number | null
           status?: 'generated' | 'reviewed' | 'accepted' | 'rejected'
           metadata?: Record<string, unknown> | null

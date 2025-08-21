@@ -24,11 +24,16 @@ interface Source {
 
 interface Draft {
   id: string;
-  title: string;
+  title?: string;
   content: string;
   platform: string;
   status: string;
   created_at: string;
+  draft_title?: string | null;
+  metadata?: {
+    originalTopic?: string;
+    title?: string;
+  };
 }
 
 interface TrendingTopicsResponse {

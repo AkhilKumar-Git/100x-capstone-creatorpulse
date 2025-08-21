@@ -140,7 +140,9 @@ export async function GET() {
       content: draft.content,
       platform: draft.platform,
       status: draft.status,
-      created_at: draft.created_at
+      created_at: draft.created_at,
+      draft_title: draft.draft_title,
+      metadata: draft.metadata
     })) || [];
 
     const response = {

@@ -29,11 +29,16 @@ interface Source {
 
 interface Draft {
   id: string;
-  title: string;
+  title?: string;
   content: string;
   platform: string;
   status: string;
   created_at: string;
+  draft_title?: string | null;
+  metadata?: {
+    originalTopic?: string;
+    title?: string;
+  };
 }
 
 interface DashboardOverviewProps {
@@ -245,7 +250,7 @@ export function DashboardOverview({
                   >
                     <div className="flex-1 min-w-0">
                       <h4 className="text-[#F5F5F5] font-medium truncate group-hover:text-blue-300 transition-colors">
-                        {draft.title || 'Untitled Draft'}
+                        {draft.draft_title || draft.metadata?.originalTopic || draft.metadata?.title || draft.title || 'Untitled Draft'}
                       </h4>
                       <p className="text-[#A0A0A0] text-sm truncate group-hover:text-gray-300 transition-colors">
                         {draft.content || 'No content'}

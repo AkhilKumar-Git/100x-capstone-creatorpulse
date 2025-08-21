@@ -3,9 +3,10 @@ import { sbServer } from '@/lib/supabase/server';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await sbServer();
     
     // Get the current user session
@@ -25,7 +26,7 @@ export async function PUT(
     const { data, error } = await supabase
       .from('sources')
       .update({ active })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .select()
       .single();
@@ -54,9 +55,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await sbServer();
     
     // Get the current user session
@@ -73,7 +75,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('sources')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id);
 
     if (error) {
