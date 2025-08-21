@@ -108,14 +108,14 @@ export function ProfileSection() {
                 </AvatarFallback>
               </Avatar>
               
-              <GradientButton 
+              <Button 
                 onClick={handleAvatarUpload}
                  
                 className="border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Photo
-              </GradientButton>
+              </Button>
               
               <p className="text-xs text-gray-500 text-center">
                 JPG, PNG or GIF. Max size 2MB. Recommended: 400x400px
@@ -205,13 +205,13 @@ export function ProfileSection() {
               <p className="text-xs text-gray-500">{formData.bio.length}/160 characters</p>
             </div>
 
-            <GradientButton 
+            <Button 
               onClick={handleSaveChanges}
               disabled={isLoading}
               className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white"
             >
               {isLoading ? 'Saving...' : 'Save Changes'}
-            </GradientButton>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -264,9 +264,9 @@ export function ProfileSection() {
                   <p className="text-sm text-gray-400">{formData.email}</p>
                 </div>
               </div>
-              <GradientButton   className="border-neutral-700 text-gray-300">
+              <Button   className="border-neutral-700 text-gray-300">
                 Verify
-              </GradientButton>
+              </Button>
             </div>
             
             <div className="flex items-center justify-between py-3 border-b border-neutral-800">

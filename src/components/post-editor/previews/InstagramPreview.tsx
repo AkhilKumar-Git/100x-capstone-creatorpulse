@@ -20,7 +20,7 @@ interface InstagramPreviewProps {
 
 export function InstagramPreview({ content, firstComment, media }: InstagramPreviewProps) {
   const formatContent = (content: string) => {
-    if (!content.trim()) return 'Start typing your caption...';
+    if (!content || !content.trim()) return 'Start typing your caption...';
     
     // Format hashtags and mentions
     return content
@@ -60,7 +60,8 @@ export function InstagramPreview({ content, firstComment, media }: InstagramPrev
             </AvatarFallback>
           </Avatar>
           <div>
-            <div className="text-white text-sm font-medium">yourusername</div>
+            <div className="text-white text-sm font-medium">
+            </div>
           </div>
         </div>
         <MoreHorizontal className="h-5 w-5 text-white" />
@@ -84,19 +85,19 @@ export function InstagramPreview({ content, firstComment, media }: InstagramPrev
       <div className="p-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-4">
-            <GradientButton   className="text-white hover:text-red-400 hover:bg-transparent p-0 h-auto">
+            <Button   className="text-white hover:text-red-400 bg-transparent p-0 h-auto hover:bg-transparent">
               <Heart className="h-6 w-6" />
-            </GradientButton>
-            <GradientButton   className="text-white hover:text-blue-400 hover:bg-transparent p-0 h-auto">
+            </Button>
+            <Button   className="text-white hover:text-blue-400 bg-transparent p-0 h-auto hover:bg-transparent">
               <MessageCircle className="h-6 w-6" />
-            </GradientButton>
-            <GradientButton   className="text-white hover:text-blue-400 hover:bg-transparent p-0 h-auto">
+              </Button>
+            <Button   className="text-white hover:text-blue-400 bg-transparent p-0 h-auto hover:bg-transparent">
               <Send className="h-6 w-6" />
-            </GradientButton>
+            </Button>
           </div>
-          <GradientButton   className="text-white hover:text-yellow-400 hover:bg-transparent p-0 h-auto">
+          <Button   className="text-white hover:text-yellow-400 bg-transparent p-0 h-auto hover:bg-transparent">
             <Bookmark className="h-6 w-6" />
-          </GradientButton>
+          </Button>
         </div>
 
         {/* Likes */}
@@ -115,7 +116,7 @@ export function InstagramPreview({ content, firstComment, media }: InstagramPrev
         {/* Character count indicator */}
         {content && (
           <div className="mt-2 text-xs text-gray-500">
-            {content.length}/2,200 characters
+            {content?.length || 0}/2,200 characters
           </div>
         )}
 

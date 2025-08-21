@@ -20,7 +20,7 @@ interface LinkedInPreviewProps {
 
 export function LinkedInPreview({ content, title }: LinkedInPreviewProps) {
   const formatContent = (content: string) => {
-    if (!content.trim()) return 'Start writing your professional update...';
+    if (!content || !content.trim()) return 'Start writing your professional update...';
     
     // Format hashtags and mentions for LinkedIn
     return content
@@ -96,7 +96,7 @@ export function LinkedInPreview({ content, title }: LinkedInPreviewProps) {
         {/* Character count indicator */}
         {content && (
           <div className="mt-2 text-xs text-[#B0B7C3]">
-            {content.length}/3,000 characters
+            {content?.length || 0}/3,000 characters
           </div>
         )}
       </div>
@@ -128,33 +128,33 @@ export function LinkedInPreview({ content, title }: LinkedInPreviewProps) {
       {/* Action Buttons */}
       <div className="px-4 py-3 border-t border-[#38434F]">
         <div className="flex items-center justify-around">
-          <GradientButton   className="text-[#B0B7C3] hover:bg-[#38434F] flex-1 h-10">
+          <Button   className="text-[#B0B7C3] bg-transparent hover:bg-[#38434F] flex-1 h-10">
             <div className="flex flex-col items-center gap-1">
               <ThumbsUp className="h-4 w-4" />
               <span className="text-xs">Like</span>
             </div>
-          </GradientButton>
+          </Button>
           
-          <GradientButton   className="text-[#B0B7C3] hover:bg-[#38434F] flex-1 h-10">
+          <Button   className="text-[#B0B7C3] bg-transparent hover:bg-[#38434F] flex-1 h-10">
             <div className="flex flex-col items-center gap-1">
               <MessageSquare className="h-4 w-4" />
               <span className="text-xs">Comment</span>
             </div>
-          </GradientButton>
+          </Button> 
           
-          <GradientButton   className="text-[#B0B7C3] hover:bg-[#38434F] flex-1 h-10">
+          <Button   className="text-[#B0B7C3] bg-transparent hover:bg-[#38434F] flex-1 h-10">
             <div className="flex flex-col items-center gap-1">
               <Repeat2 className="h-4 w-4" />
               <span className="text-xs">Repost</span>
             </div>
-          </GradientButton>
+          </Button>
           
-          <GradientButton   className="text-[#B0B7C3] hover:bg-[#38434F] flex-1 h-10">
+          <Button   className="text-[#B0B7C3] bg-transparent hover:bg-[#38434F] flex-1 h-10">
             <div className="flex flex-col items-center gap-1">
               <Send className="h-4 w-4" />
               <span className="text-xs">Send</span>
             </div>
-          </GradientButton>
+          </Button>
         </div>
       </div>
     </div>

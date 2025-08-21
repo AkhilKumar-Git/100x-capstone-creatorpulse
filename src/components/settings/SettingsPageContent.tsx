@@ -104,7 +104,7 @@ export function SettingsPageContent() {
         <div className="w-80 flex-shrink-0">
           <nav className="space-y-2">
             {settingsNavItems.map((item) => (
-              <GradientButton
+              <Button
                 key={item.id}
                 
                 className={cn(
@@ -134,7 +134,7 @@ export function SettingsPageContent() {
                     </div>
                   </div>
                 </div>
-              </GradientButton>
+              </Button>
             ))}
           </nav>
         </div>

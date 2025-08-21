@@ -33,10 +33,13 @@ import {
   Instagram,
   Upload,
   Hash,
-  PenTool
+  PenTool,
+  RefreshCw,
+  Wand2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GenerateNowButton } from '@/components/GenerateNowButton';
+import { toast } from 'sonner';
 
 type Platform = 'x' | 'linkedin' | 'instagram';
 
@@ -55,6 +58,21 @@ interface PostData {
   threads?: ThreadTweet[]; // For X threads
   scheduledDate?: Date;
   scheduledTime?: string;
+  generatedImageUrl?: string; // AI-generated image URL
+}
+
+interface GeneratedContent {
+  x?: {
+    content: string;
+    threads?: ThreadTweet[];
+    isThread?: boolean;
+  };
+  linkedin?: {
+    content: string;
+  };
+  instagram?: {
+    content: string;
+  };
 }
 
 export default function PostEditor() {
@@ -65,9 +83,14 @@ export default function PostEditor() {
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [isDraftSaved, setIsDraftSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string>('');
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent>({});
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [currentTopic, setCurrentTopic] = useState('');
 
   // Handle URL parameters on component mount
   useEffect(() => {
@@ -77,9 +100,11 @@ export default function PostEditor() {
       const date = urlParams.get('date');
       const time = urlParams.get('time');
       const formats = urlParams.get('formats');
+      const draftId = urlParams.get('draftId');
 
       if (prompt) {
         setInitialPrompt(decodeURIComponent(prompt));
+        setCurrentTopic(decodeURIComponent(prompt));
       }
 
       if (date && time) {
@@ -102,8 +127,60 @@ export default function PostEditor() {
           setPostData(prev => ({ ...prev, platform: 'instagram' }));
         }
       }
+
+      // If draftId is provided, load the draft
+      if (draftId) {
+        loadDraft(draftId);
+      }
     }
   }, []);
+
+  const loadDraft = async (draftId: string) => {
+    try {
+      const response = await fetch(`/api/drafts/${draftId}`);
+      if (!response.ok) {
+        throw new Error('Failed to load draft');
+      }
+
+      const data = await response.json();
+      const draft = data.draft;
+
+      // Set platform first
+      setPostData(prev => ({ ...prev, platform: draft.platform }));
+
+      // Set content based on platform
+      if (draft.platform === 'x' && draft.metadata?.threads) {
+        setPostData(prev => ({
+          ...prev,
+          content: draft.content,
+          threads: draft.metadata.threads,
+          title: draft.metadata?.title,
+          firstComment: draft.metadata?.firstComment
+        }));
+      } else {
+        setPostData(prev => ({
+          ...prev,
+          content: draft.content,
+          title: draft.metadata?.title,
+          firstComment: draft.metadata?.firstComment,
+          threads: draft.platform === 'x' ? [{ 
+            id: '1', 
+            content: draft.content, 
+            characterCount: draft.content.length 
+          }] : undefined
+        }));
+      }
+
+      if (draft.metadata?.originalTopic) {
+        setCurrentTopic(draft.metadata.originalTopic);
+      }
+
+      toast.success('Draft loaded successfully');
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      toast.error('Failed to load draft');
+    }
+  };
 
   // Character limits for different platforms
   const characterLimits = {
@@ -113,15 +190,42 @@ export default function PostEditor() {
   };
 
   const handlePlatformChange = (platform: Platform) => {
-    setPostData(prev => ({
-      ...prev,
-      platform,
-      content: '',
-      title: undefined,
-      firstComment: undefined,
-      media: undefined,
-      threads: platform === 'x' ? [{ id: '1', content: '', characterCount: 0 }] : undefined
-    }));
+    // Check if we have generated content for this platform
+    const platformContent = generatedContent[platform];
+    
+    if (platformContent) {
+      if (platform === 'x' && 'threads' in platformContent && platformContent.threads) {
+        setPostData(prev => ({
+          ...prev,
+          platform,
+          content: platformContent.content,
+          threads: platformContent.threads,
+          title: undefined,
+          firstComment: undefined,
+          media: undefined
+        }));
+      } else {
+        setPostData(prev => ({
+          ...prev,
+          platform,
+          content: platformContent.content,
+          title: undefined,
+          firstComment: undefined,
+          media: undefined,
+          threads: platform === 'x' ? [{ id: '1', content: '', characterCount: 0 }] : undefined
+        }));
+      }
+    } else {
+      setPostData(prev => ({
+        ...prev,
+        platform,
+        content: '',
+        title: undefined,
+        firstComment: undefined,
+        media: undefined,
+        threads: platform === 'x' ? [{ id: '1', content: '', characterCount: 0 }] : undefined
+      }));
+    }
   };
 
   const handleContentChange = (content: string) => {
@@ -180,10 +284,89 @@ export default function PostEditor() {
     }
   };
 
+
+
   const handleSaveDraft = async () => {
-    setIsDraftSaved(true);
-    // Here you would save to backend
-    setTimeout(() => setIsDraftSaved(false), 2000);
+    if (!postData.content || !postData.content.trim()) {
+      toast.error('Cannot save empty draft');
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const draftData = {
+        platform: postData.platform,
+        content: postData.content,
+        title: postData.title,
+        firstComment: postData.firstComment,
+        threads: postData.threads,
+        originalTopic: currentTopic,
+        generatedImageUrl: postData.generatedImageUrl
+      };
+
+      const response = await fetch('/api/save-draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(draftData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save draft');
+      }
+
+      setIsDraftSaved(true);
+      toast.success('Draft saved successfully!');
+      setTimeout(() => setIsDraftSaved(false), 3000);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast.error('Failed to save draft. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!postData.content.trim()) {
+      toast.error('Please enter content first to generate a matching image');
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: postData.content,
+          platform: postData.platform,
+          topic: currentTopic
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      const data = await response.json();
+      
+      if (data.imageUrl) {
+        setPostData(prev => ({ ...prev, generatedImageUrl: data.imageUrl }));
+        toast.success('Image generated successfully!');
+      } else {
+        throw new Error('No image URL received');
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast.error('Failed to generate image. Please try again.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleSchedulePost = async () => {
@@ -236,6 +419,34 @@ export default function PostEditor() {
                 setIsGenerating={setIsGenerating}
                 platform={postData.platform}
                 initialPrompt={initialPrompt}
+                onGenerateComplete={(data) => {
+                  console.log('📥 PostEditor received data:', data);
+                  setGeneratedContent(data);
+                  setHasGenerated(true);
+                  
+                  // Set the content for the current platform
+                  const currentPlatformContent = data[postData.platform];
+                  console.log(`🎯 Current platform (${postData.platform}) content:`, currentPlatformContent);
+                  
+                  if (currentPlatformContent) {
+                    if (postData.platform === 'x' && 'threads' in currentPlatformContent && currentPlatformContent.threads) {
+                      console.log('🧵 Setting X threads:', currentPlatformContent.threads);
+                      setPostData(prev => ({
+                        ...prev,
+                        content: currentPlatformContent.content,
+                        threads: currentPlatformContent.threads
+                      }));
+                    } else {
+                      console.log('📝 Setting content for platform:', postData.platform, currentPlatformContent.content);
+                      setPostData(prev => ({
+                        ...prev,
+                        content: currentPlatformContent.content
+                      }));
+                    }
+                  } else {
+                    console.log('❌ No content found for current platform:', postData.platform);
+                  }
+                }}
               />
             </motion.div>
           )}
@@ -296,15 +507,7 @@ export default function PostEditor() {
                 </div>
               </div>
               
-              {/* Generate Now Button */}
-              <div className="flex items-center gap-3 mt-4">
-                <GenerateNowButton
-                  variant="outline"
-                  size="sm"
-                  className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
-                />
-                <span className="text-xs text-gray-500">Generate fresh content from your sources</span>
-              </div>
+
             </CardHeader>
             
             <CardContent className="space-y-6">
@@ -384,50 +587,85 @@ export default function PostEditor() {
                   <div className="flex items-center justify-between">
                     <Label className="text-white font-medium">Content</Label>
                     <span className={`text-sm font-mono ${
-                      postData.content.length > characterLimits[postData.platform]
+                      (postData.content?.length || 0) > characterLimits[postData.platform]
                         ? 'text-red-400'
                         : 'text-gray-400'
                     }`}>
-                      {postData.content.length}/{characterLimits[postData.platform]}
+                      {postData.content?.length || 0}/{characterLimits[postData.platform]}
                     </span>
                   </div>
                   <Textarea
                     placeholder={`What would you like to share on ${postData.platform === 'instagram' ? 'Instagram' : 'LinkedIn'}?`}
-                    value={postData.content}
+                    value={postData.content || ''}
                     onChange={(e) => handleContentChange(e.target.value)}
                     className="bg-neutral-800 border-neutral-700 text-white placeholder:text-gray-500 min-h-[220px] resize-none text-sm leading-relaxed"
                   />
                 </div>
               )}
 
-              {/* Instagram Media Upload */}
-              {postData.platform === 'instagram' && (
+              {/* LinkedIn/Instagram Media Generation */}
+              {(postData.platform === 'linkedin' || postData.platform === 'instagram') && (
                 <div className="space-y-5">
                   <div className="space-y-3">
-                    <Label className="text-white font-medium">Media Upload</Label>
-                    <div className="border-2 border-dashed border-neutral-700 rounded-lg p-10 text-center hover:border-neutral-600 transition-colors">
-                      <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-400 text-sm leading-relaxed">
-                        Drag & drop images or videos, or{' '}
-                        <span className="text-purple-400 hover:text-purple-300 cursor-pointer font-medium">
-                          browse files
-                        </span>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Recommended: 4:5 aspect ratio for best results
-                      </p>
+                    <Label className="text-white font-medium">AI-Generated Media</Label>
+                    <div className="space-y-3">
+                      {postData.generatedImageUrl ? (
+                        <div className="relative">
+                          <img 
+                            src={postData.generatedImageUrl} 
+                            alt="Generated content" 
+                            className="w-full h-48 object-cover rounded-lg border border-neutral-700"
+                          />
+                          <button
+                            onClick={() => setPostData(prev => ({ ...prev, generatedImageUrl: undefined }))}
+                            className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 text-white rounded-full"
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-neutral-700 rounded-lg p-8 text-center hover:border-neutral-600 transition-colors">
+                          <Sparkles className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                            Generate an AI image that matches your content
+                          </p>
+                          <GradientButton
+                            onClick={() => handleGenerateImage()}
+                            disabled={!postData.content.trim() || isGeneratingImage}
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                          >
+                            {isGeneratingImage ? (
+                              <div className="flex items-center gap-2">
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Generating Image...
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4" />
+                                Generate AI Image
+                              </div>
+                            )}
+                          </GradientButton>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {postData.platform === 'instagram' ? '4:5 aspect ratio recommended' : '1.91:1 aspect ratio recommended'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <Label className="text-white font-medium">First Comment (Optional)</Label>
-                    <Input
-                      placeholder="Add a first comment..."
-                      value={postData.firstComment || ''}
-                      onChange={(e) => setPostData(prev => ({ ...prev, firstComment: e.target.value }))}
-                      className="bg-neutral-800 border-neutral-700 text-white placeholder:text-gray-500 h-11"
-                    />
-                  </div>
+                  {/* Instagram-specific fields */}
+                  {postData.platform === 'instagram' && (
+                    <div className="space-y-3">
+                      <Label className="text-white font-medium">First Comment (Optional)</Label>
+                      <Input
+                        placeholder="Add a first comment..."
+                        value={postData.firstComment || ''}
+                        onChange={(e) => setPostData(prev => ({ ...prev, firstComment: e.target.value }))}
+                        className="bg-neutral-800 border-neutral-700 text-white placeholder:text-gray-500 h-11"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -455,15 +693,16 @@ export default function PostEditor() {
               {/* Action Buttons */}
               <div className="flex items-center gap-3 pt-6">
                 <GradientButton
-                  
                   onClick={handleSaveDraft}
+                  disabled={isSaving || !postData.content || !postData.content.trim()}
                   className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 h-11 flex-1"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {isDraftSaved ? 'Saved!' : 'Save Draft'}
+                  {isSaving ? 'Saving...' : isDraftSaved ? 'Saved!' : 'Save Draft'}
                 </GradientButton>
                 <GradientButton
                   onClick={handleSchedulePost}
+                  disabled={!postData.content || !postData.content.trim()}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white h-11 flex-1"
                 >
                   <Send className="h-4 w-4 mr-2" />
@@ -504,18 +743,27 @@ export default function PostEditor() {
                     <>
                       {postData.platform === 'x' && (
                         <TwitterPreview 
-                          threads={postData.threads || []}
+                          threads={(() => {
+                            console.log('🐦 TwitterPreview receiving threads:', postData.threads);
+                            return postData.threads || [];
+                          })()}
                         />
                       )}
                       {postData.platform === 'linkedin' && (
                         <LinkedInPreview 
-                          content={postData.content}
+                          content={(() => {
+                            console.log('💼 LinkedInPreview receiving content:', postData.content);
+                            return postData.content || '';
+                          })()}
                           title={postData.title}
                         />
                       )}
                       {postData.platform === 'instagram' && (
                         <InstagramPreview 
-                          content={postData.content}
+                          content={(() => {
+                            console.log('📸 InstagramPreview receiving content:', postData.content);
+                            return postData.content || '';
+                          })()}
                           firstComment={postData.firstComment}
                           media={postData.media}
                         />

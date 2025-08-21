@@ -24,8 +24,11 @@ interface TwitterPreviewProps {
 }
 
 export function TwitterPreview({ threads }: TwitterPreviewProps) {
+  // Ensure threads is always an array
+  const safeThreads = threads || [{ id: '1', content: '', characterCount: 0 }];
+  
   const formatContent = (content: string) => {
-    if (!content.trim()) return 'Start typing to see your post preview...';
+    if (!content || !content.trim()) return 'Start typing to see your post preview...';
     
     // Simple formatting for hashtags and mentions
     return content
@@ -62,8 +65,10 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
   };
 
   return (
-    <div className="space-y-3 w-full overflow-hidden">
-      {threads.map((thread, index) => (
+    <div className="w-full overflow-hidden">
+      {/* Scrollable container for multiple threads */}
+      <div className={`space-y-3 ${safeThreads.length > 2 ? 'max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800' : ''}`}>
+        {safeThreads.map((thread, index) => (
         <div key={thread.id} className="bg-black rounded-lg p-3 border border-gray-800 w-full min-w-0">
           {/* Tweet Header */}
           <div className="flex items-start gap-3 w-full min-w-0">
@@ -88,10 +93,10 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
               </div>
               
               {/* Thread indicator for multi-tweet threads */}
-              {threads.length > 1 && (
+              {safeThreads.length > 1 && (
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded-full">
-                    {index + 1}/{threads.length}
+                    {index + 1}/{safeThreads.length}
                   </span>
                   {index > 0 && (
                     <span className="text-xs text-gray-500">Replying to @yourhandle</span>
@@ -101,23 +106,23 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
               
               {/* Tweet Content */}
               <div className="text-white text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">
-                {formatContent(thread.content)}
+                {formatContent(thread?.content || '')}
               </div>
               
               {/* Character Count Indicator */}
-              {thread.content && (
+              {thread?.content && (
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                   <span className="truncate">{formatTimeStamp()}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={thread.characterCount > 280 ? 'text-red-400' : 'text-gray-500'}>
-                      {thread.characterCount}/280
+                    <span className={(thread?.characterCount || 0) > 280 ? 'text-red-400' : 'text-gray-500'}>
+                      {thread?.characterCount || 0}/280
                     </span>
-                    {thread.characterCount > 280 && (
+                    {(thread?.characterCount || 0) > 280 && (
                       <div className="w-4 h-4 rounded-full border-2 border-red-400 relative">
                         <div 
                           className="absolute inset-0 rounded-full bg-red-400"
                           style={{ 
-                            clipPath: `polygon(0 0, ${Math.min(100, (thread.characterCount / 280) * 100)}% 0, ${Math.min(100, (thread.characterCount / 280) * 100)}% 100%, 0 100%)` 
+                            clipPath: `polygon(0 0, ${Math.min(100, ((thread?.characterCount || 0) / 280) * 100)}% 0, ${Math.min(100, ((thread?.characterCount || 0) / 280) * 100)}% 100%, 0 100%)` 
                           }}
                         />
                       </div>
@@ -128,26 +133,26 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
               
               {/* Tweet Actions */}
               <div className="flex items-center justify-between w-full overflow-hidden">
-                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0 bg-transparent">
                   <MessageCircle className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-1 text-xs">24</span>
                 </Button>
                 
-                <Button   className="text-gray-500 hover:text-green-400 hover:bg-green-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-green-400 hover:bg-green-400/10 p-2 h-auto min-w-0 bg-transparent">
                   <Repeat2 className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-1 text-xs">12</span>
                 </Button>
                 
-                <Button   className="text-gray-500 hover:text-red-400 hover:bg-red-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-red-400 hover:bg-red-400/10 p-2 h-auto min-w-0 bg-transparent">
                   <Heart className="h-4 w-4 flex-shrink-0" />
                   <span className="ml-1 text-xs">89</span>
                 </Button>
                 
-                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0 bg-transparent">
                   <Share className="h-4 w-4 flex-shrink-0" />
                 </Button>
                 
-                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0">
+                <Button   className="text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 p-2 h-auto min-w-0 bg-transparent">
                   <Bookmark className="h-4 w-4 flex-shrink-0" />
                 </Button>
               </div>
@@ -155,24 +160,30 @@ export function TwitterPreview({ threads }: TwitterPreviewProps) {
           </div>
           
           {/* Thread Connection Line */}
-          {index < threads.length - 1 && (
+          {index < safeThreads.length - 1 && (
             <div className="flex items-center justify-center mt-4">
               <div className="w-px h-4 bg-gray-700"></div>
             </div>
           )}
         </div>
-      ))}
+        ))}
+      </div>
       
       {/* Thread Summary for multiple tweets */}
-      {threads.length > 1 && (
+      {safeThreads.length > 1 && (
         <div className="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-800 w-full">
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>Thread Preview</span>
-            <span>{threads.length} tweets</span>
+            <span>{safeThreads.length} tweets</span>
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            Total characters: {threads.reduce((sum, thread) => sum + thread.characterCount, 0)}
+            Total characters: {safeThreads.reduce((sum, thread) => sum + (thread?.characterCount || 0), 0)}
           </div>
+          {safeThreads.length > 2 && (
+            <div className="mt-1 text-xs text-blue-400">
+              ↕ Scroll to view all tweets
+            </div>
+          )}
         </div>
       )}
     </div>

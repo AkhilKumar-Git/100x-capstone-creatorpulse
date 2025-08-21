@@ -5,8 +5,16 @@ import { cn } from "@/lib/utils";
 
 const Stepper = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    onValueChange?: (value: number) => void;
+    orientation?: "horizontal" | "vertical";
+    value?: number;
+    indicators?: {
+      completed?: React.ReactNode;
+      active?: React.ReactNode;
+    };
+  }
+>(({ className, onValueChange, orientation, value, indicators, ...props }, ref) => (
   <div
     ref={ref}
     className={cn("flex flex-col", className)}
@@ -17,8 +25,10 @@ Stepper.displayName = "Stepper";
 
 const StepperContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    value?: number;
+  }
+>(({ className, value, ...props }, ref) => (
   <div
     ref={ref}
     className={cn("flex-1", className)}
@@ -53,8 +63,10 @@ StepperNav.displayName = "StepperNav";
 
 const StepperItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    step?: number;
+  }
+>(({ className, step, ...props }, ref) => (
   <div
     ref={ref}
     className={cn("relative", className)}

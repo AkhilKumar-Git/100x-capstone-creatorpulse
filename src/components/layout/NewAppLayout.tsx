@@ -11,7 +11,8 @@ import {
   Settings,
   User,
   LogOut,
-  ChevronUp
+  ChevronUp,
+  FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,13 @@ export default function NewAppLayout({ children }: AppLayoutProps) {
       href: "/post-editor",
       icon: (
         <PenTool className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Your Drafts",
+      href: "/your-drafts",
+      icon: (
+        <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
     },
     {

@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { XIcon } from '@/components/ui/x-icon';
 import {
   Sparkles,
   ThumbsUp,
@@ -16,13 +17,28 @@ import {
   Wand2,
   MessageSquare,
   TrendingUp,
-  Lightbulb
+  Lightbulb,
+  Zap,
+  Target,
+  Heart,
+  Star,
+  Flame,
+  Linkedin,
+  Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GradientButton } from '../ui/gradient-button';
+import { toast } from 'sonner';
+import { GenerateProgressOverlay } from '@/components/GenerateProgressOverlay';
 
 type Platform = 'x' | 'linkedin' | 'instagram';
-type Tone = 'casual' | 'professional' | 'witty' | 'inspirational' | 'technical';
+type Tone = 'casual' | 'professional' | 'witty' | 'inspirational' | 'technical' | 'bold' | 'friendly' | 'authoritative';
+
+interface ThreadTweet {
+  id: string;
+  content: string;
+  characterCount: number;
+}
 
 interface AICoPilotProps {
   onInsertContent: (content: string) => void;
@@ -30,33 +46,102 @@ interface AICoPilotProps {
   setIsGenerating: (generating: boolean) => void;
   platform: Platform;
   initialPrompt?: string;
+  onGenerateComplete?: (data: GeneratedPlatformContent) => void;
 }
 
-interface GeneratedContent {
-  text: string;
+interface GeneratedPlatformContent {
+  x?: {
+    content: string;
+    threads?: ThreadTweet[];
+    isThread?: boolean;
+  };
+  linkedin?: {
+    content: string;
+  };
+  instagram?: {
+    content: string;
+  };
+}
+
+interface ViralTemplate {
   id: string;
-  timestamp: Date;
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  template: string;
+  color: string;
 }
 
-export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, platform, initialPrompt }: AICoPilotProps) {
-  const [prompt, setPrompt] = useState(initialPrompt || '');
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
-  const [selectedTone, setSelectedTone] = useState<Tone>('professional');
+export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, platform, initialPrompt, onGenerateComplete }: AICoPilotProps) {
+  const [topic, setTopic] = useState(initialPrompt || '');
+  const [generatedContent, setGeneratedContent] = useState<GeneratedPlatformContent | null>(null);
+  const [selectedTones, setSelectedTones] = useState<Tone[]>(['professional']);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+  const [showProgressOverlay, setShowProgressOverlay] = useState(false);
+  const [apiResponseReceived, setApiResponseReceived] = useState(false);
+  const [imageApiCompleted, setImageApiCompleted] = useState(false);
 
-  // Update prompt when initialPrompt changes
+  // Update topic when initialPrompt changes
   React.useEffect(() => {
-    if (initialPrompt && initialPrompt !== prompt) {
-      setPrompt(initialPrompt);
+    if (initialPrompt && initialPrompt !== topic) {
+      setTopic(initialPrompt);
     }
   }, [initialPrompt]);
 
   const toneOptions = [
-    { value: 'casual', label: 'Casual', description: 'Friendly and conversational' },
-    { value: 'professional', label: 'Professional', description: 'Formal and business-like' },
-    { value: 'witty', label: 'Witty', description: 'Humorous and engaging' },
-    { value: 'inspirational', label: 'Inspirational', description: 'Motivating and uplifting' },
-    { value: 'technical', label: 'Technical', description: 'Detailed and informative' }
+    { value: 'casual', label: 'Casual', icon: Heart, color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
+    { value: 'professional', label: 'Professional', icon: Target, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+    { value: 'witty', label: 'Witty', icon: Sparkles, color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+    { value: 'inspirational', label: 'Inspirational', icon: Star, color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+    { value: 'technical', label: 'Technical', icon: Zap, color: 'bg-green-500/20 text-green-400 border-green-500/30' },
+    { value: 'bold', label: 'Bold', icon: Flame, color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+    { value: 'friendly', label: 'Friendly', icon: Heart, color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+    { value: 'authoritative', label: 'Authoritative', icon: Target, color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' }
+  ];
+
+  const viralTemplates: ViralTemplate[] = [
+    {
+      id: 'hook',
+      name: 'Hook Builder',
+      icon: Zap,
+      template: 'Write a viral hook about',
+      color: 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+    },
+    {
+      id: 'story',
+      name: 'Story Booster',
+      icon: MessageSquare,
+      template: 'Tell an engaging story about',
+      color: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    },
+    {
+      id: 'listicle',
+      name: 'List Master',
+      icon: TrendingUp,
+      template: 'Create a compelling list about',
+      color: 'bg-green-500/20 text-green-400 border-green-500/30'
+    },
+    {
+      id: 'insight',
+      name: 'Insight Booster',
+      icon: Lightbulb,
+      template: 'Share valuable insights about',
+      color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+    },
+    {
+      id: 'controversy',
+      name: 'Hot Take',
+      icon: Flame,
+      template: 'Share a controversial but thoughtful opinion about',
+      color: 'bg-red-500/20 text-red-400 border-red-500/30'
+    },
+    {
+      id: 'behind-scenes',
+      name: 'Behind Scenes',
+      icon: Star,
+      template: 'Show behind the scenes of',
+      color: 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+    }
   ];
 
   const mockGeneratedContent = {
@@ -77,79 +162,150 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
     ]
   };
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+  const toggleTone = (tone: Tone) => {
+    setSelectedTones(prev => 
+      prev.includes(tone) 
+        ? prev.filter(t => t !== tone)
+        : [...prev, tone]
+    );
+  };
+
+  const applyTemplate = (template: ViralTemplate) => {
+    // Do not generate; just pre-append the template so the user can see/confirm
+    setSelectedTemplate(template.id);
+    const base = topic.trim();
+    const enhancedTopic = base ? `${template.template} ${base}` : `${template.template} `;
+    setTopic(enhancedTopic);
+  };
+
+  const handleGenerate = async (customTopic?: string) => {
+    const finalTopic = customTopic || topic;
+    if (!finalTopic.trim()) {
+      toast.error('Please enter a topic to generate content');
+      return;
+    }
     
     setIsGenerating(true);
+    setShowProgressOverlay(true);
+    setApiResponseReceived(false);
+    setImageApiCompleted(false);
     setFeedback(null);
     
-    // Simulate AI generation delay
-    setTimeout(() => {
-      const contentOptions = mockGeneratedContent[platform];
-      const randomContent = contentOptions[Math.floor(Math.random() * contentOptions.length)];
+    try {
+      const response = await fetch('/api/generate-draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: finalTopic.trim(),
+          platforms: ['x', 'linkedin', 'instagram'],
+          tones: selectedTones
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate content');
+      }
+
+      const data = await response.json();
+      console.log('🎯 Frontend received API response:', data);
+      console.log('📋 Platforms data:', data.platforms);
       
-      setGeneratedContent({
-        text: randomContent,
-        id: Date.now().toString(),
-        timestamp: new Date()
-      });
+      setGeneratedContent(data.platforms);
+      
+      // Notify parent component if callback exists
+      if (onGenerateComplete) {
+        console.log('🔄 Calling onGenerateComplete with:', data.platforms);
+        onGenerateComplete(data.platforms);
+      }
+      
+      // Signal that API response has been received
+      setApiResponseReceived(true);
+      // Since image generation is part of the same API call, mark it as completed too
+      setImageApiCompleted(true);
+    } catch (error) {
+      console.error('Error generating content:', error);
+      setShowProgressOverlay(false);
       setIsGenerating(false);
-    }, 2000);
-  };
-
-  const handleRegenerate = () => {
-    if (generatedContent) {
-      setIsGenerating(true);
-      setTimeout(() => {
-        const contentOptions = mockGeneratedContent[platform];
-        const randomContent = contentOptions[Math.floor(Math.random() * contentOptions.length)];
-        
-        setGeneratedContent({
-          text: randomContent,
-          id: Date.now().toString(),
-          timestamp: new Date()
-        });
-        setIsGenerating(false);
-      }, 1500);
+      toast.error('Failed to generate content. Please try again.');
     }
   };
 
-  const handleShorten = () => {
-    if (generatedContent) {
-      const shortened = generatedContent.text.split('\n\n')[0] + '\n\nWhat are your thoughts?';
-      setGeneratedContent({
-        ...generatedContent,
-        text: shortened,
-        id: Date.now().toString()
-      });
+  const handleProgressComplete = () => {
+    setShowProgressOverlay(false);
+    setIsGenerating(false);
+    toast.success('Content generated for all platforms!');
+  };
+
+  const handleRegenerate = async () => {
+    if (topic.trim()) {
+      await handleGenerate();
     }
   };
 
-  const handleExpand = () => {
-    if (generatedContent) {
-      const expanded = generatedContent.text + '\n\nThis is just the beginning. The real transformation happens when we start applying these insights consistently.\n\nWhat\'s your next step?';
-      setGeneratedContent({
-        ...generatedContent,
-        text: expanded,
-        id: Date.now().toString()
-      });
+  const getPlatformIcon = (platform: Platform) => {
+    switch (platform) {
+      case 'x':
+        return <XIcon className="h-4 w-4" />;
+      case 'linkedin':
+        return <Linkedin className="h-4 w-4" />;
+      case 'instagram':
+        return <Instagram className="h-4 w-4" />;
+    }
+  };
+
+  const getPlatformColor = (platform: Platform) => {
+    switch (platform) {
+      case 'x':
+        return 'text-white';
+      case 'linkedin':
+        return 'text-[#0077B5]';
+      case 'instagram':
+        return 'text-[#E4405F]';
+    }
+  };
+
+
+
+  const handleInsertToPlatform = (platform: Platform) => {
+    const platformContent = generatedContent?.[platform];
+    if (platformContent) {
+      // For X platform, if we have threads, use the complete thread content
+      if (platform === 'x' && 'threads' in platformContent && platformContent.threads) {
+        const threadContent = platformContent.threads.map(t => t.content).join('\n\n---\n\n');
+        onInsertContent(threadContent);
+      } else {
+        onInsertContent(platformContent.content);
+      }
+      toast.success(`Content inserted for ${platform.toUpperCase()}`);
     }
   };
 
   const handleFeedback = (type: 'up' | 'down') => {
     setFeedback(type);
     // Here you would send feedback to your backend
-    console.log(`User feedback: ${type} for content: ${generatedContent?.id}`);
+    console.log(`User feedback: ${type} for generated content`);
+    toast.success(`Thank you for your feedback!`);
   };
 
   return (
-    <Card className="bg-[#1E1E1E] border-neutral-800 h-full">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-purple-400" />
-          CreatorPulse Co-Pilot
-        </CardTitle>
-      </CardHeader>
+    <>
+      <GenerateProgressOverlay
+        isVisible={showProgressOverlay}
+        onComplete={handleProgressComplete}
+        platformCount={3}
+        waitForApiResponse={apiResponseReceived}
+        imageApiCompleted={imageApiCompleted}
+      />
+      
+      <Card className="bg-[#1E1E1E] border-neutral-800 h-full">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-400" />
+            CreatorPulse Co-Pilot
+          </CardTitle>
+        </CardHeader>
       
       <CardContent className="space-y-6">
         {!generatedContent ? (
@@ -157,36 +313,48 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-white text-sm font-medium">What do you want to write about?</label>
-              <Textarea
+              <Input
                 placeholder="E.g. My experience building a SaaS product, tips for remote work, or the future of AI..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="bg-neutral-800 border-neutral-700 text-white placeholder:text-gray-500 min-h-[120px] resize-none"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="bg-neutral-800 border-neutral-700 text-white placeholder:text-gray-500"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !isGenerating) {
+                    handleGenerate();
+                  }
+                }}
               />
             </div>
             
             <div className="space-y-3">
-              <label className="text-white text-sm font-medium">Tone</label>
-              <Select value={selectedTone} onValueChange={(value: Tone) => setSelectedTone(value)}>
-                <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white h-12">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-neutral-800 border-neutral-700 min-w-[380px] max-w-[480px]">
-                  {toneOptions.map((tone) => (
-                    <SelectItem key={tone.value} value={tone.value} className="py-4 px-4 cursor-pointer h-auto">
-                      <div className="flex flex-col w-full">
-                        <div className="font-medium text-sm text-white leading-tight">{tone.label}</div>
-                        <div className="text-xs text-gray-400 leading-snug -mt-0.5">{tone.description}</div>
+              <label className="text-white text-sm font-medium">Tone (Select multiple)</label>
+              <div className="flex flex-wrap gap-2">
+                {toneOptions.map((tone) => {
+                  const Icon = tone.icon;
+                  const isSelected = selectedTones.includes(tone.value as Tone);
+                  return (
+                    <button
+                      key={tone.value}
+                      onClick={() => toggleTone(tone.value as Tone)}
+                      className={`px-3 py-2 rounded-full text-xs font-medium border transition-all duration-200 ${
+                        isSelected 
+                          ? tone.color 
+                          : 'bg-neutral-800 text-gray-400 border-neutral-700 hover:border-neutral-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Icon className="h-3 w-3" />
+                        {tone.label}
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <GradientButton
-              onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
+              onClick={() => handleGenerate()}
+              disabled={!topic.trim() || isGenerating}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
             >
               {isGenerating ? (
@@ -202,31 +370,31 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
               )}
             </GradientButton>
 
-            {/* Quick Prompts */}
+            {/* Viral Templates */}
             <div className="space-y-3">
-              <label className="text-white text-sm font-medium">Quick Prompts</label>
+              <label className="text-white text-sm font-medium">Viral Boosters</label>
               <div className="grid grid-cols-1 gap-2">
-                {[
-                  { icon: Lightbulb, text: 'Industry insights', color: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30' },
-                  { icon: TrendingUp, text: 'Growth tips', color: 'bg-green-600/20 text-green-400 border-green-600/30' },
-                  { icon: MessageSquare, text: 'Personal story', color: 'bg-blue-600/20 text-blue-400 border-blue-600/30' }
-                ].map((quickPrompt, index) => (
-                  <GradientButton
-                    key={index}
-                    
-                    
-                    onClick={() => setPrompt(`Write about ${quickPrompt.text.toLowerCase()} in the ${platform === 'x' ? 'tech' : platform === 'linkedin' ? 'business' : 'creator'} space`)}
-                    className={`text-sm h-10 justify-start ${quickPrompt.color} hover:opacity-80`}
-                  >
-                    <quickPrompt.icon className="h-4 w-4 mr-2" />
-                    {quickPrompt.text}
-                  </GradientButton>
-                ))}
+                {viralTemplates.map((template) => {
+                  const Icon = template.icon;
+                  return (
+                    <button
+                      key={template.id}
+                      onClick={() => applyTemplate(template)}
+                      disabled={!topic.trim() || isGenerating}
+                      className={`text-sm h-10 justify-start px-3 py-2 rounded-lg border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${template.color} hover:opacity-80`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        {template.name}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         ) : (
-          /* Generated State */
+          /* Generated State - Platform Previews */
           <div className="space-y-4">
             <AnimatePresence mode="wait">
               {isGenerating ? (
@@ -239,8 +407,9 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                 >
                   <Skeleton className="h-4 w-full bg-neutral-700" />
                   <Skeleton className="h-4 w-5/6 bg-neutral-700" />
-                  <Skeleton className="h-4 w-4/5 bg-neutral-700" />
-                  <Skeleton className="h-20 w-full bg-neutral-700" />
+                  <Skeleton className="h-32 w-full bg-neutral-700" />
+                  <Skeleton className="h-32 w-full bg-neutral-700" />
+                  <Skeleton className="h-32 w-full bg-neutral-700" />
                 </motion.div>
               ) : (
                 <motion.div
@@ -249,97 +418,63 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-4"
                 >
-                  {/* Generated Content */}
+                  {/* Generated Content Summary */}
                   <div className="p-4 rounded-lg bg-neutral-800/50 border border-neutral-700/50">
-                    <div className="whitespace-pre-wrap text-white text-sm leading-relaxed">
-                      {generatedContent.text}
+                    <div className="text-center space-y-3">
+                      <div className="text-green-400 text-sm font-medium">✨ Content Generated Successfully!</div>
+                      <div className="text-gray-300 text-sm">
+                        AI has created optimized content for all platforms. Check the preview panel to see your content.
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                        {(['x', 'linkedin', 'instagram'] as Platform[]).map((platformType, index) => (
+                          <div key={platformType} className="flex items-center gap-1">
+                            {index > 0 && <span>•</span>}
+                            {getPlatformIcon(platformType)}
+                            <span>{platformType === 'x' ? 'X' : platformType.charAt(0).toUpperCase() + platformType.slice(1)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Note: Previews are shown only in the right panel */}
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pt-4">
                     <GradientButton
-                      onClick={() => onInsertContent(generatedContent.text)}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Insert to Editor
-                    </GradientButton>
-                    <GradientButton
-                      
                       onClick={handleRegenerate}
-                      className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700"
+                      disabled={isGenerating}
+                      className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
                     >
-                      <RefreshCw className="h-4 w-4" />
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Regenerate All
                     </GradientButton>
-                  </div>
-
-                  {/* Refinement Tools */}
-                  <div className="space-y-4">
-                    <label className="text-white text-sm font-medium">Refine Content</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <GradientButton
-                        
-                        
-                        onClick={handleShorten}
-                        className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 text-sm h-9"
-                      >
-                        Shorten
-                      </GradientButton>
-                      <GradientButton
-                        
-                        
-                        onClick={handleExpand}
-                        className="bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 text-sm h-9"
-                      >
-                        Expand
-                      </GradientButton>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-white text-xs font-medium text-gray-400">Change Tone</label>
-                      <Select value={selectedTone} onValueChange={(value: Tone) => setSelectedTone(value)}>
-                        <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white text-sm h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-neutral-800 border-neutral-700">
-                          {toneOptions.map((tone) => (
-                            <SelectItem key={tone.value} value={tone.value} className="text-sm">
-                              {tone.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
 
                   {/* Feedback Section */}
                   <div className="space-y-3 pt-4 border-t border-neutral-800">
                     <label className="text-white text-sm font-medium">Rate this generation</label>
                     <div className="flex items-center gap-2">
-                      <GradientButton
-                        
-                        
+                      <button
                         onClick={() => handleFeedback('up')}
-                        className={`${
+                        className={`p-2 rounded-lg border transition-all duration-200 ${
                           feedback === 'up' 
                             ? 'bg-green-600/20 border-green-600/50 text-green-400' 
                             : 'bg-neutral-800 border-neutral-700 text-gray-400 hover:text-green-400'
                         }`}
                       >
                         <ThumbsUp className="h-4 w-4" />
-                      </GradientButton>
-                      <GradientButton
-                        
-                        
+                      </button>
+                      <button
                         onClick={() => handleFeedback('down')}
-                        className={`${
+                        className={`p-2 rounded-lg border transition-all duration-200 ${
                           feedback === 'down' 
                             ? 'bg-red-600/20 border-red-600/50 text-red-400' 
                             : 'bg-neutral-800 border-neutral-700 text-gray-400 hover:text-red-400'
                         }`}
                       >
                         <ThumbsDown className="h-4 w-4" />
-                      </GradientButton>
+                      </button>
                       <span className="text-xs text-gray-400 ml-2">
                         Help us improve AI quality
                       </span>
@@ -347,17 +482,17 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
                   </div>
 
                   {/* Start Over */}
-                  <GradientButton
-                    
+                  <button
                     onClick={() => {
                       setGeneratedContent(null);
-                      setPrompt('');
+                      setTopic('');
                       setFeedback(null);
+                      setSelectedTemplate('');
                     }}
-                    className="w-full text-gray-400 hover:text-white hover:bg-neutral-800"
+                    className="w-full py-2 text-gray-400 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors duration-200"
                   >
                     Start Over
-                  </GradientButton>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -365,5 +500,6 @@ export function AICoPilot({ onInsertContent, isGenerating, setIsGenerating, plat
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

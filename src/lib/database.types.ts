@@ -222,26 +222,29 @@ export interface Database {
           content: string
           based_on: number | null
           status: 'generated' | 'reviewed' | 'accepted' | 'rejected'
+          metadata: Record<string, unknown> | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          platform: 'x' | 'youtube' | 'rss' | 'blog'
+          platform: 'x' | 'linkedin' | 'instagram'
           content: string
           based_on?: number | null
           status?: 'generated' | 'reviewed' | 'accepted' | 'rejected'
+          metadata?: Record<string, unknown> | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          platform?: 'x' | 'youtube' | 'rss' | 'blog'
+          platform?: 'x' | 'linkedin' | 'instagram'
           content?: string
           based_on?: number | null
           status?: 'generated' | 'reviewed' | 'accepted' | 'rejected'
+          metadata?: Record<string, unknown> | null
           created_at?: string
           updated_at?: string
         }
