@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card";
 
 interface TestimonialsSectionProps {

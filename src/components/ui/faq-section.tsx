@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Mail } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { GradientButton } from "@/components/ui/gradient-button";
 
 interface FaqSectionProps extends React.HTMLAttributes<HTMLElement> {

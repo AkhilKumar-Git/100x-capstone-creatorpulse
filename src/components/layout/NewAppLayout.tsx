@@ -15,7 +15,7 @@ import {
   FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import ClientSideWrapper from "./ClientSideWrapper";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";

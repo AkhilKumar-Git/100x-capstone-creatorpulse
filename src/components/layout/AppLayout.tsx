@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { GradientButton } from "@/components/ui/gradient-button";
 import { 
   LayoutDashboard, 

@@ -1,4 +1,6 @@
-import { sbClient } from './supabase/client';
+"use client";
+
+import { sbClient } from "@/infrastructure/supabase/client";
 import { useAuth } from '@/contexts/AuthContext';
 
 // Types for user settings

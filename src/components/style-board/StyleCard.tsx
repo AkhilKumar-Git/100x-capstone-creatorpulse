@@ -1,8 +1,8 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 import { IconEdit, IconTrash, IconFileText } from "@tabler/icons-react";
 import { CustomButton } from "@/components/ui/custom-button";
 import { useState } from "react";
-import { StyleSample } from "@/lib/database.types";
+import { StyleSample } from "@/shared/types/database.types";
 
 interface StyleCardProps {
   style: StyleSample;

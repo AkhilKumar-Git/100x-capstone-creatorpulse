@@ -6,7 +6,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { AnimatedGridPattern } from "@/components/ui/animated-grid-pattern";
 import { AnimatedButton } from "@/components/ui/animated-button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 export default function Hero() {
   const [isScrolled, setIsScrolled] = useState(false);

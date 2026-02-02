@@ -1,7 +1,7 @@
 "use client";
 
-import { sbClient } from "@/lib/supabase/client";
-import type { WordData, ToneData } from "./analysis";
+import { sbClient } from "@/infrastructure/supabase/client";
+import type { WordData, ToneData } from "@/shared/utils/style-analysis";
 
 const supabase = sbClient();
 

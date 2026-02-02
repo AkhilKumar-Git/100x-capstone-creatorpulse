@@ -1,5 +1,5 @@
-import { sbClient } from "@/lib/supabase/client";
-import { StyleSample, StyleSampleInsert, StyleSampleUpdate } from "@/lib/database.types";
+import { sbClient } from "@/infrastructure/supabase/client";
+import { StyleSample, StyleSampleInsert, StyleSampleUpdate } from "@/shared/types/database.types";
 
 export async function listStyleSamplesClient(): Promise<StyleSample[]> {
   try {

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-// import { getStyleFewShots } from '@/lib/style/retrieve';
+import { SupabaseVectorStore } from '@/infrastructure/supabase/SupabaseVectorStore';
+import { StyleService } from '@/core/application/StyleService';
 
 const GenerateDraftSchema = z.object({
   topic: z.string().min(1, 'Topic is required'),
@@ -50,7 +51,7 @@ REQUIREMENTS:
 - First line must be a compelling hook (no hashtags)
 - Use natural emojis and line breaks for rhythm
 - Provide a clear call-to-action near the end (save/share/comment)
-- Add a compact block of 10–18 relevant hashtags at the end only
+- Add a compact block of 10-18 relevant hashtags at the end only
 - Keep voice authentic, concise, and mobile-friendly
 - Do NOT include markdown headings or labels; output only the caption text`
 };
@@ -68,13 +69,13 @@ function createTwitterThread(content: string): string[] {
   const sentences = sanitized.split(/[.!?]+/).filter(s => s.trim());
   const threads: string[] = [];
   let currentThread = '';
-  
+
   for (const sentence of sentences) {
     const trimmedSentence = sentence.trim();
     if (!trimmedSentence) continue;
-    
+
     const potentialThread = currentThread ? `${currentThread}. ${trimmedSentence}` : trimmedSentence;
-    
+
     if (potentialThread.length <= maxChars) {
       currentThread = potentialThread;
     } else {
@@ -88,11 +89,11 @@ function createTwitterThread(content: string): string[] {
       }
     }
   }
-  
+
   if (currentThread) {
     threads.push(currentThread);
   }
-  
+
   // Add thread indicators and emojis
   if (threads.length > 1) {
     threads[0] = `${threads[0]} 🧵👇`;
@@ -103,38 +104,38 @@ function createTwitterThread(content: string): string[] {
       threads[threads.length - 1] = `${threads.length}/ ${threads[threads.length - 1]}`;
     }
   }
-  
+
   return threads;
 }
 
 // Enhanced function to create optimized Twitter threads with better structure
 function createOptimizedTwitterThread(content: string, topic: string): string[] {
   const sanitized = sanitizeTwitterOutput(content);
-  
+
   // If content is short enough, return as single tweet
   if (sanitized.length <= 280) {
     return [sanitized];
   }
-  
+
   // Extract key points and create structured tweets (2-3 max)
   const sentences = sanitized.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const threads: string[] = [];
   let currentPoint = '';
   let pointNumber = 1;
-  
+
   for (const sentence of sentences) {
     const trimmed = sentence.trim();
     if (trimmed.length === 0) continue;
-    
+
     // Check if this sentence would make a good standalone point
     if (trimmed.length >= 50 && trimmed.length <= 200) {
       // Format as numbered point with minimal emojis
       const formattedPoint = formatTwitterPoint(trimmed, pointNumber, topic);
-      
+
       if (formattedPoint.length <= 280) {
         threads.push(formattedPoint);
         pointNumber++;
-        
+
         // Limit to 3 tweets maximum
         if (threads.length >= 3) break;
       }
@@ -154,7 +155,7 @@ function createOptimizedTwitterThread(content: string, topic: string): string[] 
       currentPoint = trimmed;
     }
   }
-  
+
   // Add remaining content as final point
   if (currentPoint && threads.length < 3) {
     const formattedPoint = formatTwitterPoint(currentPoint, pointNumber, topic);
@@ -162,7 +163,7 @@ function createOptimizedTwitterThread(content: string, topic: string): string[] 
       threads.push(formattedPoint);
     }
   }
-  
+
   // If no threads created, fall back to original content
   return threads.length > 0 ? threads : [sanitized];
 }
@@ -190,7 +191,7 @@ function formatTwitterPoint(content: string, pointNumber: number, topic: string)
     'emotional': '❤️',
     'empathy': '🤗'
   };
-  
+
   // Find relevant emoji based on content
   let relevantEmoji = '';
   for (const [keyword, emoji] of Object.entries(emojiMap)) {
@@ -199,11 +200,11 @@ function formatTwitterPoint(content: string, pointNumber: number, topic: string)
       break;
     }
   }
-  
+
   // Format: "PointNumber/ Content [Emoji] #Topic"
   const baseContent = `${pointNumber}/ ${content}`;
   const hashtag = `#${topic.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '')}`;
-  
+
   if (relevantEmoji && baseContent.length + relevantEmoji.length + hashtag.length + 2 <= 280) {
     return `${baseContent} ${relevantEmoji} ${hashtag}`;
   } else if (baseContent.length + hashtag.length + 1 <= 280) {
@@ -244,7 +245,7 @@ export async function POST(request: NextRequest) {
     );
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -255,7 +256,7 @@ export async function POST(request: NextRequest) {
     // 2) Parse and validate request body
     const body = await request.json();
     const validation = GenerateDraftSchema.safeParse(body);
-    
+
     if (!validation.success) {
       return NextResponse.json(
         { error: 'Invalid request body', details: validation.error.message },
@@ -265,88 +266,96 @@ export async function POST(request: NextRequest) {
 
     const { topic, platforms = ['x', 'linkedin', 'instagram'], tones = [] } = validation.data;
 
-    // 3) Generate content for all requested platforms
+    // 3) Generate content for all requested platforms in parallel
+    const platformPromises = platforms.map(async (platform) => {
+      try {
+        let systemPrompt = platformPrompts[platform];
+
+        // Add tone information
+        if (tones.length > 0) {
+          systemPrompt += `\n\nTONE REQUIREMENTS: Incorporate these tones: ${tones.join(', ')}.`;
+        }
+
+        // Style few-shots from user's saved samples
+        let styleFewShots: string[] = [];
+        try {
+          // Retrieve from StyleService
+          const vectorStore = new SupabaseVectorStore();
+          const styleService = new StyleService(vectorStore);
+          styleFewShots = await styleService.findSimilarStyles(user.id, platform as 'x' | 'linkedin' | 'instagram', topic, 4);
+        } catch (e) {
+          console.error('Style few-shots retrieval failed:', e);
+        }
+
+        // 4) Call OpenAI
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt + (styleFewShots.length > 0 ? `\n\nSTYLE REFERENCE SAMPLES (mimic tone/voice; do not copy verbatim):\n${styleFewShots.map((s, i) => `[Sample ${i + 1}] ${s}`).join('\n\n')}` : '')
+              },
+              {
+                role: 'user',
+                content: `Create engaging content for ${platform} about: ${topic}. Output only the final text for the platform with no extra labels.`
+              }
+            ],
+            max_tokens: 800,
+            temperature: 0.7
+          }),
+        });
+
+        if (!openaiResponse.ok) {
+          const errorData = await openaiResponse.json();
+          console.error(`OpenAI API error for ${platform}:`, errorData);
+          return { platform, error: 'Failed to generate content' };
+        }
+
+        const openaiData = await openaiResponse.json();
+        const generatedContent = openaiData.choices?.[0]?.message?.content;
+
+        if (!generatedContent) return { platform, error: 'No content generated' };
+
+        // Handle Twitter threading
+        if (platform === 'x') {
+          // Assuming createOptimizedTwitterThread is available in scope
+          const threads = createOptimizedTwitterThread(generatedContent, topic);
+          return {
+            platform,
+            content: generatedContent,
+            threads: threads.map((thread, index) => ({
+              id: (index + 1).toString(),
+              content: thread,
+              characterCount: thread.length
+            })),
+            isThread: threads.length > 1
+          };
+        }
+
+        return { platform, content: generatedContent };
+
+      } catch (err) {
+        console.error(`Error generating for ${platform}:`, err);
+        return { platform, error: 'Internal generation error' };
+      }
+    });
+
+    const resultsArray = await Promise.all(platformPromises);
+
+    // Transform array back to object
     const results: Record<string, any> = {};
-    
-    for (const platform of platforms) {
-      let systemPrompt = platformPrompts[platform];
-      
-      // Add tone information to the system prompt if provided
-      if (tones.length > 0) {
-        const toneInstruction = `\n\nTONE REQUIREMENTS: Incorporate these tones into the content: ${tones.join(', ')}. Make the content reflect these characteristics naturally.`;
-        systemPrompt += toneInstruction;
+    resultsArray.forEach(res => {
+      if (res) {
+        const { platform, ...data } = res;
+        results[platform] = data;
       }
-
-      // Style few-shots from user's saved samples
-      let styleFewShots: string[] = [];
-      // Temporarily disabled until database function is created
-      // try {
-      //   styleFewShots = await getStyleFewShots(user.id, platform as 'x'|'linkedin'|'instagram', topic, 4);
-      // } catch (e) {
-      //   console.error('Style few-shots retrieval failed:', e);
-      // }
-
-      // 4) Call OpenAI (Chat Completions API) for content generation using GPT-4
-      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt + (styleFewShots.length > 0 ? `\n\nSTYLE REFERENCE SAMPLES (mimic tone/voice; do not copy verbatim):\n${styleFewShots.map((s, i)=>`[Sample ${i+1}] ${s}`).join('\n\n')}` : '')
-            },
-            {
-              role: 'user',
-              content: `Create engaging content for ${platform} about: ${topic}. Output only the final text for the platform with no extra labels.`
-            }
-          ],
-          max_tokens: 800,
-          temperature: 0.7
-        }),
-      });
-
-      if (!openaiResponse.ok) {
-        const errorData = await openaiResponse.json();
-        console.error(`OpenAI API error for ${platform}:`, errorData);
-        results[platform] = { error: 'Failed to generate content' };
-        continue;
-      }
-
-      const openaiData = await openaiResponse.json();
-      console.log(`🤖 OpenAI Response for ${platform}:`, JSON.stringify(openaiData, null, 2));
-      
-      const generatedContent = openaiData.choices?.[0]?.message?.content;
-      console.log(`📝 Generated content for ${platform}:`, generatedContent);
-
-      if (!generatedContent) {
-        console.log(`❌ No content generated for ${platform}`);
-        results[platform] = { error: 'No content generated' };
-        continue;
-      }
-
-      // Handle Twitter threading with better structure
-      if (platform === 'x') {
-        const threads = createOptimizedTwitterThread(generatedContent, topic);
-        results[platform] = {
-          content: generatedContent,
-          threads: threads.map((thread, index) => ({
-            id: (index + 1).toString(),
-            content: thread,
-            characterCount: thread.length
-          })),
-          isThread: threads.length > 1
-        };
-      } else {
-        results[platform] = {
-          content: generatedContent
-        };
-      }
-    }
+    });
 
     // 5) Image generation is now handled separately via /api/generate-image endpoint
     // This allows users to generate images only when needed for LinkedIn/Instagram
@@ -358,7 +367,7 @@ export async function POST(request: NextRequest) {
       platforms: results,
       message: 'Content generated successfully for all platforms'
     }, null, 2));
-    
+
     return NextResponse.json({
       ok: true,
       topic,

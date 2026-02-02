@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sbServer } from '@/lib/supabase/server';
-import { SourceInputSchema } from '@/lib/validators/sources';
+import { sbServer } from '@/infrastructure/supabase/server';
+import { SourceInputSchema } from '@/shared/validators/sources';
 
 export async function POST(request: NextRequest) {
   try {

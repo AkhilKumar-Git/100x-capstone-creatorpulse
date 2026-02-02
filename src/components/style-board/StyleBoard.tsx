@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { StyleCard } from "./StyleCard";
@@ -8,16 +8,16 @@ import { StyleDialog } from "./StyleDialog";
 import { WordCloud } from "./WordCloud";
 import { ToneAnalysis } from "./ToneAnalysis";
 import { VoiceDNA } from "./VoiceDNA";
-import { extractVocabularyWithAI, analyzeTone, extractFormattingHabits, extractPhrasePatterns, type WordData, type ToneData, type PhrasePattern } from "@/lib/style/analysis";
-import { shouldRefreshAnalysis, storeAnalysisData, getStoredAnalysisData, testDatabaseConnection } from "@/lib/style/database";
+import { extractVocabularyWithAI, analyzeTone, extractFormattingHabits, type WordData, type ToneData } from "@/shared/utils/style-analysis";
+import { shouldRefreshAnalysis, storeAnalysisData, getStoredAnalysisData, testDatabaseConnection } from "@/infrastructure/supabase/client/analysis-storage";
 import { FileText, Plus, Brain, BarChart3 } from "lucide-react";
-import { StyleSample } from "@/lib/database.types";
+import { StyleSample } from "@/shared/types/database.types";
 import {
   listStyleSamplesClient,
   embedAndCreateStyleSample,
   updateStyleSampleWithEmbedding,
   deleteStyleSampleClient,
-} from "@/lib/style/client";
+} from "@/infrastructure/supabase/client/style-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CustomButton } from "@/components/ui/custom-button";
 import { toast } from "sonner";
@@ -37,19 +37,19 @@ export function StyleBoard() {
     toneAnalysis: ToneData[];
     formattingHabits: string[];
   } | null>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
+  // const [analysisLoading, setAnalysisLoading] = useState(false);
 
   // Calculate metrics and analysis from actual style data or cache
   const analysisData = useMemo(() => {
     if (styles.length === 0) return null;
-    
+
     // Calculate basic metrics
     const totalWords = styles.reduce((sum, style) => {
       const words = style.raw_text.split(/\s+/).length;
       return sum + words;
     }, 0);
     const avgWordCount = Math.round(totalWords / styles.length);
-    
+
     // Calculate readability score (simplified Flesch-Kincaid)
     const avgSentenceLength = styles.reduce((sum, style) => {
       const sentences = style.raw_text.split(/[.!?]+/).filter(s => s.trim().length > 0);
@@ -58,17 +58,17 @@ export function StyleBoard() {
       }, 0) / Math.max(sentences.length, 1);
       return sum + avgWordsPerSentence;
     }, 0) / styles.length;
-    
+
     // Simplified readability calculation
     let readabilityScore = "Grade 9";
     if (avgSentenceLength <= 8) readabilityScore = "Grade 6";
     else if (avgSentenceLength <= 12) readabilityScore = "Grade 8";
     else if (avgSentenceLength <= 16) readabilityScore = "Grade 10";
     else readabilityScore = "Grade 12";
-    
+
     // Use cached analysis if available, otherwise compute fresh
     let vocabulary: WordData[], toneAnalysis: ToneData[], formattingHabits: string[];
-    
+
     if (cachedAnalysis) {
       vocabulary = cachedAnalysis.vocabulary;
       toneAnalysis = cachedAnalysis.toneAnalysis;
@@ -79,7 +79,7 @@ export function StyleBoard() {
       toneAnalysis = analyzeTone(styles);
       formattingHabits = extractFormattingHabits(styles);
     }
-    
+
     return {
       avgWordCount,
       readabilityScore,
@@ -97,13 +97,13 @@ export function StyleBoard() {
     }
   }, [user]);
 
-  const loadStyles = async () => {
+  const loadStyles = useCallback(async () => {
     try {
       setLoading(true);
       const data = await listStyleSamplesClient();
       setStyles(data);
       setIsAnalyzed(data.length > 0);
-      
+
       // Load cached analysis data if available
       if (data.length > 0) {
         await loadAnalysisData(data.length);
@@ -114,15 +114,15 @@ export function StyleBoard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const loadAnalysisData = async (currentSampleCount: number) => {
     try {
-      setAnalysisLoading(true);
-      
+      // setAnalysisLoading(true);
+
       // Test database connection first
       await testDatabaseConnection();
-      
+
       // Always try to load cached data first
       const cachedData = await getStoredAnalysisData();
       if (cachedData) {
@@ -130,27 +130,27 @@ export function StyleBoard() {
         setCachedAnalysis(cachedData);
         return;
       }
-      
+
       // Only check refresh if no cached data exists
       const needsRefresh = await shouldRefreshAnalysis(currentSampleCount);
-      
+
       if (!needsRefresh) {
         console.log('Analysis is fresh, no refresh needed');
         return;
       }
-      
+
       // If we reach here, we need fresh analysis
       console.log('Fresh analysis needed, will compute and store');
       setCachedAnalysis(null);
-      
+
       // Load AI-powered vocabulary analysis
       await loadAIVocabularyAnalysis();
-      
+
     } catch (error) {
       console.error("Error loading analysis data:", error);
       setCachedAnalysis(null);
     } finally {
-      setAnalysisLoading(false);
+      // setAnalysisLoading(false);
     }
   };
 
@@ -158,31 +158,31 @@ export function StyleBoard() {
   const loadAIVocabularyAnalysis = async () => {
     try {
       if (styles.length === 0) return;
-      
+
       console.log('Loading AI-powered vocabulary analysis...');
-      
+
       // Get AI vocabulary analysis
       const aiVocabulary = await extractVocabularyWithAI(styles);
-      
+
       // Get other analysis data
       const toneAnalysis = analyzeTone(styles);
       const formattingHabits = extractFormattingHabits(styles);
-      
+
       // Set cached analysis with AI results
       setCachedAnalysis({
         vocabulary: aiVocabulary,
         toneAnalysis,
         formattingHabits
       });
-      
+
       console.log('AI vocabulary analysis loaded successfully:', aiVocabulary.length, 'items');
-      
+
     } catch (error) {
       console.error('Error loading AI vocabulary analysis:', error);
       // Fallback to basic analysis
       const toneAnalysis = analyzeTone(styles);
       const formattingHabits = extractFormattingHabits(styles);
-      
+
       setCachedAnalysis({
         vocabulary: [],
         toneAnalysis,
@@ -201,14 +201,14 @@ export function StyleBoard() {
           console.log('Vocabulary:', analysisData.vocabulary.length, 'words');
           console.log('Tone analysis:', analysisData.toneAnalysis.length, 'tones');
           console.log('Formatting habits:', analysisData.formattingHabits.length, 'habits');
-          
+
           await storeAnalysisData(
             analysisData.vocabulary,
             analysisData.toneAnalysis,
             analysisData.formattingHabits,
             analysisData.styleCount
           );
-          
+
           console.log('Analysis data stored successfully');
           // Set cached analysis to prevent re-storing
           setCachedAnalysis({
@@ -263,7 +263,7 @@ export function StyleBoard() {
         setStyles([newStyle, ...styles]);
         setIsAnalyzed(true);
         toast.success("Style added successfully");
-        
+
         // Force refresh analysis when new style is added
         setCachedAnalysis(null);
         await loadAnalysisData(styles.length + 1);
@@ -273,11 +273,11 @@ export function StyleBoard() {
           data.content,
           data.platform
         );
-        setStyles(styles.map(style => 
+        setStyles(styles.map(style =>
           style.id === editingStyle.id ? updatedStyle : style
         ));
         toast.success("Style updated successfully");
-        
+
         // Force refresh analysis when style is updated
         setCachedAnalysis(null);
         await loadAnalysisData(styles.length);
@@ -328,7 +328,7 @@ export function StyleBoard() {
           Your AI's Voice, Perfected by You
         </h1>
         <p className="text-gray-400 text-lg max-w-3xl">
-          Upload your best-performing content to create a unique Style Profile. 
+          Upload your best-performing content to create a unique Style Profile.
           The more content you provide, the more the AI-generated drafts will sound exactly like you.
         </p>
       </motion.div>

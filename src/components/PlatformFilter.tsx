@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, X, Youtube, Rss, Hash, Globe } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils/cn';
 
 export type PlatformType = 'x' | 'youtube' | 'blog' | 'rss';
 

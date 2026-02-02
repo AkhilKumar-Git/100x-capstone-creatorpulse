@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils/cn';
 import { getDay, getDaysInMonth, isSameDay } from 'date-fns';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { Check, ChevronsUpDown } from 'lucide-react';

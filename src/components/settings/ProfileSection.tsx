@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Upload, Camera, Mail, MapPin, Link as LinkIcon, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSettings } from '@/lib/settings';
+import { useSettings } from '@/infrastructure/supabase/client/settings-service';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function ProfileSection() {

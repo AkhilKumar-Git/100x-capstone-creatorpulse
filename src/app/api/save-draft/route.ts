@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sbServer } from '@/lib/supabase/server';
+import { sbServer } from '@/infrastructure/supabase/server';
 import { z } from 'zod';
 
 const SaveDraftSchema = z.object({

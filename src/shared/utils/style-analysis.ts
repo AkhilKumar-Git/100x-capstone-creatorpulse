@@ -1,6 +1,6 @@
 "use client";
 
-import { StyleSample } from "@/lib/database.types";
+import { StyleSample } from "@/shared/types/database.types";
 
 export interface WordData {
   text: string;

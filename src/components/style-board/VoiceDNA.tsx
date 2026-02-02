@@ -54,10 +54,10 @@ function MetricCard({ icon, title, value, change, color, iconColor }: MetricCard
   );
 }
 
-export function VoiceDNA({ 
-  isAnalyzed, 
-  onRetrain, 
-  onReset, 
+export function VoiceDNA({
+  isAnalyzed,
+  onRetrain,
+  onReset,
   className = "",
   styleCount = 0,
   averageWordCount = 0,
@@ -147,7 +147,7 @@ export function VoiceDNA({
             <RefreshCw className="h-4 w-4 mr-2" />
             Update Profile with New Content
           </Button>
-          
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -164,9 +164,7 @@ export function VoiceDNA({
                   Reset Voice Profile?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-gray-400">
-                  This action cannot be undone. This will permanently delete your 
-                  current voice profile and all analyzed content. You'll need to 
-                  upload new content to rebuild your profile.
+                  This action cannot be undone. This will permanently delete your current voice profile and all analyzed content. You&apos;re building a strong profile. Add more diverse content types (short form, threads, articles) to improve analysis accuracy.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -191,7 +189,7 @@ export function VoiceDNA({
           💡 Pro Tip
         </h5>
         <p className="text-blue-300 text-xs leading-relaxed">
-          For even better results, regularly update your profile with new high-performing content. 
+          For even better results, regularly update your profile with new high-performing content.
           The AI learns and adapts to your evolving style over time.
         </p>
       </div>

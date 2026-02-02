@@ -4,10 +4,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, FileText, Users, Activity } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Users, Activity, Sparkles, ArrowRight } from 'lucide-react';
 import { GenerateNowButton } from '@/components/GenerateNowButton';
 import { AvatarGroup } from '@/components/ui/avatar-group';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TrendingTopic {
   id: string;
@@ -48,11 +49,11 @@ interface DashboardOverviewProps {
   onRegenerateClick: () => void;
 }
 
-export function DashboardOverview({ 
-  trendingTopics, 
-  sources, 
-  drafts, 
-  onRegenerateClick 
+export function DashboardOverview({
+  trendingTopics,
+  sources,
+  drafts,
+  onRegenerateClick
 }: DashboardOverviewProps) {
   const router = useRouter();
 
@@ -67,13 +68,13 @@ export function DashboardOverview({
   const createSourceAvatars = (sourceIds: string[]) => {
     console.log('Creating source avatars for:', sourceIds);
     console.log('Available sources:', sources);
-    
+
     const avatars = sourceIds
       .map(id => {
         const source = sources.find(s => s.id === id);
         console.log(`Looking for source ${id}:`, source);
         if (!source) return null;
-        
+
         return {
           src: source.avatar,
           alt: source.name,
@@ -81,7 +82,7 @@ export function DashboardOverview({
         };
       })
       .filter((avatar): avatar is { src: string; alt: string; label: string } => avatar !== null);
-    
+
     console.log('Generated avatars:', avatars);
     return avatars;
   };
@@ -137,87 +138,77 @@ export function DashboardOverview({
 
       {/* Main Content Area - Side by Side Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Trending Topics */}
-        <Card className="bg-[#1E1E1E] border-neutral-800">
-          <CardHeader>
-            <CardTitle className="text-[#F5F5F5] flex items-center gap-2">
+        {/* Left Column - Trending Topics (Premium Redesign) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-purple-400" />
-              Trending Topics (5 daily)
-              <span className="text-sm text-purple-400 opacity-60 ml-auto">
-                Click to create content
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+              Your Daily Pulse
+            </h3>
+            <span className="text-xs text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full border border-purple-500/20">
+              {trendingTopics.length} Top Picks
+            </span>
+          </div>
+
+          <AnimatePresence mode="popLayout">
             {trendingTopics.length === 0 ? (
-              <div className="text-center py-8">
-                <TrendingUp className="h-12 w-12 text-[#64748B] mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-[#F5F5F5] mb-2">
-                  No trending topics yet
-                </h3>
-                <p className="text-[#A0A0A0] text-sm mb-4">
-                  Click "Generate Now" to analyze your sources and identify trending topics
-                </p>
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="bg-[#1E1E1E] border border-neutral-800 rounded-xl p-8 text-center"
+              >
+                <Sparkles className="h-10 w-10 text-purple-500/50 mx-auto mb-4" />
+                <p className="text-gray-400 mb-4">No trends generated for your niche yet.</p>
                 <GenerateNowButton />
-              </div>
+              </motion.div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid gap-3">
                 {trendingTopics.map((topic, index) => (
-                  <div
+                  <motion.div
                     key={topic.id}
-                    className="p-4 rounded-lg border border-neutral-800/50 hover:border-purple-500/50 transition-all duration-200 bg-neutral-800/20 cursor-pointer hover:bg-neutral-800/40 hover:shadow-lg hover:shadow-purple-500/10 group"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
                     onClick={() => handleTrendingTopicClick(topic)}
+                    className="group relative overflow-hidden rounded-xl border border-white/5 bg-gradient-to-br from-white/5 to-white/[0.02] p-5 hover:border-purple-500/40 hover:from-purple-500/10 transition-all cursor-pointer backdrop-blur-sm"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                        #{index + 1}
-                      </Badge>
-                      <Badge variant="outline" className="border-green-500/30 text-green-400">
-                        {topic.momentum_score}
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors pr-8">
+                        {topic.topic_name}
+                      </h4>
+                      <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20 whitespace-nowrap">
+                        {topic.momentum_score}% Match
                       </Badge>
                     </div>
-                    
-                    <h4 className="text-[#F5F5F5] font-semibold mb-2 group-hover:text-purple-300 transition-colors">
-                      {topic.topic_name}
-                    </h4>
-                    
-                    {topic.description && (
-                      <p className="text-[#A0A0A0] text-sm mb-3 group-hover:text-gray-300 transition-colors">
-                        {topic.description}
-                      </p>
-                    )}
-                    
-                    {/* Source Attribution - This is the key component */}
-                     <div className="flex items-center gap-3">
-                       <span className="text-[#F5F5F5] text-sm font-medium">
-                         Sources:
-                       </span>
-                       {topic.source_ids && topic.source_ids.length > 0 ? (
-                         <AvatarGroup
-                           avatars={createSourceAvatars(topic.source_ids)}
-                           maxVisible={3}
-                           size={28}
-                           overlap={10}
-                         />
-                       ) : (
-                         <span className="text-[#A0A0A0] text-sm">No sources</span>
-                       )}
-                     </div>
-                     
-                     {/* Click indicator */}
-                     <div className="mt-3 text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                       Click to create content about this topic →
-                     </div>
-                  </div>
+
+                    <p className="text-sm text-gray-400 mb-4 line-clamp-2 mix-blend-plus-lighter">
+                      {topic.description}
+                    </p>
+
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        {topic.source_ids?.length > 0 && (
+                          <AvatarGroup
+                            avatars={createSourceAvatars(topic.source_ids)}
+                            maxVisible={3}
+                            size={24}
+                            overlap={8}
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center text-xs font-medium text-purple-400 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                        Generate Script <ArrowRight className="w-3 h-3 ml-1" />
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AnimatePresence>
+        </div>
 
         {/* Right Column - Recent Drafts */}
         <Card className="bg-[#1E1E1E] border-neutral-800">
-          <CardHeader 
+          <CardHeader
             className="cursor-pointer hover:bg-neutral-800/30 transition-colors rounded-lg"
             onClick={handleRecentDraftClick}
           >
@@ -262,14 +253,14 @@ export function DashboardOverview({
                           {draft.platform}
                         </Badge>
                       )}
-                      <Badge 
+                      <Badge
                         variant={draft.status === 'published' ? 'default' : 'secondary'}
                         className="text-xs"
                       >
                         {draft.status || 'draft'}
                       </Badge>
                     </div>
-                    
+
                     {/* Click indicator */}
                     <div className="ml-2 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
                       →

@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { Bell, Mail, Smartphone, Globe, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSettings } from '@/lib/settings';
+import { useSettings } from '@/infrastructure/supabase/client/settings-service';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface NotificationSettings {

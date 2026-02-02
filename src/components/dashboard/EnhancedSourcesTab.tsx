@@ -47,7 +47,7 @@ import { toast } from 'sonner';
 import { 
   type Source,
   type CreateSourceInput
-} from '@/lib/sources';
+} from '@/infrastructure/supabase/client/source-client';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Types based on actual database schema

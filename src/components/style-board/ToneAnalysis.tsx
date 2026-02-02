@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts";
+
 
 interface ToneData {
   name: string;
@@ -19,11 +19,11 @@ interface ToneAnalysisProps {
 
 export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
   // Convert tone data to radar chart format
-  const chartData = tones.map(tone => ({
-    tone: tone.name,
-    value: tone.percentage,
-    color: tone.color
-  }));
+  // const chartData = tones.map(tone => ({
+  //   tone: tone.name,
+  //   value: tone.percentage,
+  //   color: tone.color
+  // }));
 
   return (
     <div className={`h-full bg-[#1E1E1E] border border-neutral-800 rounded-xl p-6 ${className}`}>
@@ -47,7 +47,7 @@ export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <span className="text-white font-medium text-sm">{tone.name}</span>
-                <Badge 
+                <Badge
                   className="text-xs"
                   style={{ borderColor: tone.color, color: tone.color }}
                 >
@@ -55,7 +55,7 @@ export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
                 </Badge>
               </div>
             </div>
-            
+
             {/* Progress bar */}
             <div className="relative h-2 bg-neutral-800 rounded-full overflow-hidden">
               <motion.div
@@ -74,7 +74,7 @@ export function ToneAnalysis({ tones, className = "" }: ToneAnalysisProps) {
                 transition={{ duration: 1, delay: index * 0.1 + 0.3, ease: "easeOut" }}
               />
             </div>
-            
+
             <p className="text-gray-500 text-xs leading-relaxed">
               {tone.description}
             </p>

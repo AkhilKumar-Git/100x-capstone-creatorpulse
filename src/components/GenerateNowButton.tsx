@@ -4,7 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useGenerateNow, type GenerateNowParams } from '@/hooks/useGenerateNow';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils/cn';
 import { DashboardGenerateProgressOverlay } from '@/components/DashboardGenerateProgressOverlay';
 
 interface GenerateNowButtonProps {

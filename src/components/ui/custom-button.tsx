@@ -2,7 +2,7 @@
 import React from "react";
 import { motion, useAnimationFrame, useMotionTemplate, useMotionValue, useTransform } from "framer-motion";
 import { useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/cn";
 
 interface CustomButtonProps {
   children: React.ReactNode;

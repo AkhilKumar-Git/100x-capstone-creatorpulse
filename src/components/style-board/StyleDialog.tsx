@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StyleSample } from "@/lib/database.types";
+import { StyleSample } from "@/shared/types/database.types";
 
 interface StyleDialogProps {
   open: boolean;

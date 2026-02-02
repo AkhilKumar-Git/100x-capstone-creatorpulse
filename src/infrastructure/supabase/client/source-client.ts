@@ -1,4 +1,4 @@
-import { sbClient } from './supabase/client';
+import { sbClient } from "@/infrastructure/supabase/client";
 
 export interface Source {
   id: string;
