@@ -124,10 +124,13 @@ export const MobileSidebar = ({
         {...props}
       >
         <div className="flex justify-end z-20 w-full">
-          <Menu
-            className="text-neutral-800 dark:text-neutral-200 cursor-pointer"
+          <button
             onClick={() => setOpen(!open)}
-          />
+            aria-label="Toggle Menu"
+            className="p-1 focus:outline-none focus:ring-2 focus:ring-neutral-200 rounded-md"
+          >
+            <Menu className="text-neutral-800 dark:text-neutral-200 cursor-pointer" />
+          </button>
         </div>
         <AnimatePresence>
           {open && (
@@ -144,12 +147,13 @@ export const MobileSidebar = ({
                 className
               )}
             >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
+              <button
+                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer p-1 focus:outline-none focus:ring-2 focus:ring-neutral-200 rounded-md"
                 onClick={() => setOpen(!open)}
+                aria-label="Close Menu"
               >
                 <X />
-              </div>
+              </button>
               {children}
             </motion.div>
           )}
@@ -172,6 +176,7 @@ export const SidebarLink = ({
   return (
     <Link
       href={link.href}
+      aria-label={link.label}
       className={cn(
         "flex items-center justify-start gap-2 group/sidebar py-2",
         className

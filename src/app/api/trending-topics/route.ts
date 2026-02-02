@@ -8,7 +8,7 @@ import { SupabaseVectorStore } from '@/infrastructure/supabase/SupabaseVectorSto
 import { ITrendProvider } from '@/core/domain/interfaces/ITrendProvider'; // Fixed import path
 import { sbServer } from '@/infrastructure/supabase/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const sb = await sbServer();
     const { data: { user } } = await sb.auth.getUser();
@@ -28,11 +28,16 @@ export async function GET() {
 
     const trendService = new TrendService(providers, vectorStore);
 
+    // Get topic from query params
+    const { searchParams } = new URL(request.url);
+    const topic = searchParams.get('topic');
+
     // Get user context (mock for now, ideally fetch from profile)
     const context = {
       niche: 'Tech & AI',
       audience: 'Entrepreneurs',
-      geo: 'US'
+      geo: 'US',
+      topic: topic || undefined
     };
 
     const trends = await trendService.discoverTrends(context);

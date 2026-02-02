@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +12,17 @@ import { cn } from "@/shared/utils/cn";
 export default function Hero() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [topic, setTopic] = useState("");
+  const router = useRouter();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (topic.trim()) {
+      router.push(`/dashboard?topic=${encodeURIComponent(topic.trim())}`);
+    } else {
+       router.push('/dashboard');
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -215,7 +227,6 @@ export default function Hero() {
             </span>
           </motion.h1>
 
-          {/* Supporting Text */}
           <motion.div
             className="space-y-4 mb-8 text-lg md:text-xl text-gray-300 max-w-3xl mx-auto tracking-wide"
             initial={{ opacity: 0, y: 30 }}
@@ -228,6 +239,29 @@ export default function Hero() {
             <p className="text-gray-400">
               Your all-in-one AI co-pilot for creators and agencies.
             </p>
+          </motion.div>
+
+          <motion.div
+            className="flex justify-center mb-10 w-full max-w-md mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+          >
+            <form onSubmit={handleSearch} className="relative w-full flex items-center">
+              <input
+                type="text"
+                placeholder="Enter your niche (e.g., 'Fashion Trends', 'AI News')"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="w-full px-6 py-4 bg-neutral-800/80 border border-neutral-700 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all backdrop-blur-sm pr-32"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-2 bottom-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-medium hover:opacity-90 transition-opacity"
+              >
+                Find Trends
+              </button>
+            </form>
           </motion.div>
 
           {/* Platform Logos */}

@@ -9,6 +9,10 @@ export class FirecrawlProvider implements ITrendProvider {
     const { niche, geo } = context;
 
     try {
+      const query = context.topic 
+        ? `trending news ${context.topic} ${geo}`
+        : `trending news ${niche} ${geo}`;
+
       const response = await fetch('https://api.firecrawl.dev/v1/search', {
         method: 'POST',
         headers: {
@@ -16,7 +20,7 @@ export class FirecrawlProvider implements ITrendProvider {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: `trending news ${niche} ${geo}`,
+          query: query,
           limit: 5,
           pageOptions: { fetchPageContent: false }
         }),

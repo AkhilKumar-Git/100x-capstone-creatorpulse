@@ -9,8 +9,12 @@ import { EnhancedSourcesTab } from '@/components/dashboard/EnhancedSourcesTab';
 import { useTrendingTopics } from '@/hooks/useTrendingTopics';
 import NewAppLayout from '@/components/layout/NewAppLayout';
 
+import { useSearchParams } from 'next/navigation';
+
 export default function DashboardPage() {
-  const { trendingTopics, sources, drafts, loading, error, refreshTopics } = useTrendingTopics();
+  const searchParams = useSearchParams();
+  const topic = searchParams.get('topic') || undefined;
+  const { trendingTopics, sources, drafts, loading, error, refreshTopics } = useTrendingTopics(topic);
 
   const handleRegenerateClick = () => {
     refreshTopics();

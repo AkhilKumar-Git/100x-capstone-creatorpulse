@@ -150,18 +150,20 @@ export function DashboardOverview({
             </span>
           </div>
 
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="wait">
             {trendingTopics.length === 0 ? (
               <motion.div
+                key="empty-state"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="bg-[#1E1E1E] border border-neutral-800 rounded-xl p-8 text-center"
+                exit={{ opacity: 0 }}
+                className="bg-[#1E1E1E] border border-neutral-800 rounded-xl p-8 text-center min-h-[300px] flex flex-col items-center justify-center"
               >
                 <Sparkles className="h-10 w-10 text-purple-500/50 mx-auto mb-4" />
                 <p className="text-gray-400 mb-4">No trends generated for your niche yet.</p>
                 <GenerateNowButton />
               </motion.div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid gap-3 min-h-[300px]">
                 {trendingTopics.map((topic, index) => (
                   <motion.div
                     key={topic.id}

@@ -45,7 +45,7 @@ interface TrendingTopicsResponse {
   draftsCount: number;
 }
 
-export function useTrendingTopics() {
+export function useTrendingTopics(topic?: string) {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -57,8 +57,12 @@ export function useTrendingTopics() {
     if (!user) return;
 
     try {
-      console.log('Fetching trending topics...');
-      const response = await fetch('/api/trending-topics');
+      console.log('Fetching trending topics...', topic ? `for topic: ${topic}` : '');
+      const url = topic 
+        ? `/api/trending-topics?topic=${encodeURIComponent(topic)}`
+        : '/api/trending-topics';
+        
+      const response = await fetch(url);
       console.log('Response status:', response.status);
       
       if (!response.ok) {

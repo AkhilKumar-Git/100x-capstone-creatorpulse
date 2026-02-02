@@ -14,14 +14,24 @@ export class OpenAIProvider implements ITrendProvider {
   async fetchTrends(context: TrendContext): Promise<Trend[]> {
     const { niche, audience, geo } = context;
 
-    const prompt = `
-      Identify 5 trending topics for:
-      - Niche: ${niche}
-      - Audience: ${audience}
-      - Geo: ${geo}
-      
-      Return JSON: { "trends": [{"topic": "...", "description": "...", "score": 1-100}] }
-    `;
+    let prompt;
+    if (context.topic) {
+       prompt = `
+        Identify 5 trending topics related to: '${context.topic}'.
+        If '${context.topic}' is a general query (e.g., 'what is trending'), find broad global trends.
+        
+        Return JSON: { "trends": [{"topic": "...", "description": "...", "score": 1-100}] }
+       `;
+    } else {
+       prompt = `
+        Identify 5 trending topics for:
+        - Niche: ${niche}
+        - Audience: ${audience}
+        - Geo: ${geo}
+        
+        Return JSON: { "trends": [{"topic": "...", "description": "...", "score": 1-100}] }
+      `;
+    }
 
     try {
       const response = await this.openai.chat.completions.create({

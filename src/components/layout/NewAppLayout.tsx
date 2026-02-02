@@ -127,6 +127,7 @@ export default function NewAppLayout({ children }: AppLayoutProps) {
                 <button
                   onClick={handleLogout}
                   className="flex items-center justify-start gap-2 group/sidebar py-2 text-left"
+                  aria-label="Logout"
                 >
                   {logoutLink.icon}
                   <motion.span
@@ -202,9 +203,9 @@ export default function NewAppLayout({ children }: AppLayoutProps) {
           </SidebarBody>
         </Sidebar>
         <div className="flex flex-1">
-          <div className="p-2 md:p-10 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full overflow-y-auto">
+        <main className="p-2 md:p-10 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full overflow-y-auto">
             {children}
-          </div>
+          </main>
         </div>
       </div>
     </ClientSideWrapper>
@@ -217,6 +218,7 @@ export const Logo = () => {
     <Link
       href="/dashboard"
       className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      aria-label="CreatorPulse Dashboard"
     >
       <div className="h-5 w-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
       <motion.span
@@ -236,6 +238,7 @@ export const LogoIcon = () => {
     <Link
       href="/dashboard"
       className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      aria-label="CreatorPulse Dashboard"
     >
       <div className="h-5 w-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
     </Link>

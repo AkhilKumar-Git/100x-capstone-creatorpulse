@@ -8,7 +8,12 @@ export class PerplexityProvider implements ITrendProvider {
   async fetchTrends(context: TrendContext): Promise<Trend[]> {
     const { niche, audience, geo } = context;
     
-    const prompt = `Identify 5 currently trending topics for ${niche} targeting ${audience} in ${geo}. Return strictly JSON: { "trends": [{"topic": "...", "description": "...", "score": 85}] }`;
+    let prompt;
+    if (context.topic) {
+       prompt = `Identify 5 currently trending topics related to '${context.topic}'. If '${context.topic}' is a general query (e.g., 'what is trending'), find broad global trends. Return strictly JSON: { "trends": [{"topic": "...", "description": "...", "score": 85}] }`;
+    } else {
+       prompt = `Identify 5 currently trending topics for ${niche} targeting ${audience} in ${geo}. Return strictly JSON: { "trends": [{"topic": "...", "description": "...", "score": 85}] }`;
+    }
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
