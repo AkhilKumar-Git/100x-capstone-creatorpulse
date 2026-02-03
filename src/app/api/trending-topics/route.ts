@@ -22,7 +22,23 @@ export async function GET(request: Request) {
     const topic = searchParams.get('topic');
     const force = searchParams.get('force') === 'true';
 
-    // 1. Check database first (unless force)
+    // 1. Check for active sources if no topic provided
+    const { data: sources, error: sourcesError } = await sb
+      .from('sources')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('active', true);
+
+    if (!topic && (!sources || sources.length === 0)) {
+      console.log('No topic and no active sources. Returning empty trends.');
+      return NextResponse.json({ 
+        trends: [],
+        source: 'none',
+        message: 'Add sources or search for a topic to see trends'
+      });
+    }
+
+    // 2. Check database first (unless force)
     if (!force) {
       const today = new Date();
       today.setHours(today.getHours() - 12); // Look for trends from last 12 hours
@@ -34,12 +50,11 @@ export async function GET(request: Request) {
         .order('score', { ascending: false });
 
       if (topic) {
-        // Find items where meta->query matches topic
-        // Note: Using filter for jsonb field
-        query = query.filter('meta->>query', 'eq', topic);
+        // Find items where metadata->query matches topic
+        query = query.filter('metadata->>query', 'eq', topic);
       } else {
         // For global, look for items where query is null or explicitly 'global'
-        query = query.or('meta->>query.is.null,meta->>query.eq.""');
+        query = query.or('metadata->>query.is.null,metadata->>query.eq.""');
       }
 
       const { data: existingTrends, error: dbError } = await query;
@@ -59,7 +74,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 2. Discover trends if none found or forced
+    // 3. Discover trends if none found or forced
     const vectorStore = new SupabaseVectorStore();
     const providers: ITrendProvider[] = [];
 
@@ -87,7 +102,7 @@ export async function GET(request: Request) {
       source: t.source
     }));
 
-    // 3. Save to database for persistence
+    // 4. Save to database for persistence
     if (mappedTrends.length > 0) {
       const toInsert = mappedTrends.map(t => ({
         user_id: user.id,
@@ -95,7 +110,7 @@ export async function GET(request: Request) {
         summary: t.description,
         score: t.momentum_score,
         source_type: t.source,
-        meta: { 
+        metadata: { 
           query: topic || null, 
           type: 'discovery',
           discovered_at: new Date().toISOString()

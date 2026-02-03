@@ -63,6 +63,20 @@ export function useTrendingTopics(topic?: string) {
       setLoading(true);
       console.log('Fetching trending topics...', topic ? `for topic: ${topic}` : '', force ? '(forced)' : '');
 
+      // 0. Check for active sources if no topic provided (optional optimization)
+      const { data: sources, error: sourcesError } = await supabase
+        .from('sources')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('active', true);
+
+      if (!topic && (!sources || sources.length === 0)) {
+        console.log('No topic and no active sources. Skipping fetch.');
+        setTrendingTopics([]);
+        setLoading(false);
+        return;
+      }
+
       // 1. Check database first for immediate results if not forcing
       if (!force) {
         const today = new Date();
@@ -75,9 +89,9 @@ export function useTrendingTopics(topic?: string) {
           .order('score', { ascending: false });
 
         if (topic) {
-          query = query.filter('meta->>query', 'eq', topic);
+          query = query.filter('metadata->>query', 'eq', topic);
         } else {
-          query = query.or('meta->>query.is.null,meta->>query.eq.""');
+          query = query.or('metadata->>query.is.null,metadata->>query.eq.""');
         }
 
         const { data: cached, error: dbError } = await query;

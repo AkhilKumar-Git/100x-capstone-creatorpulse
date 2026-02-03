@@ -109,10 +109,10 @@ export async function POST(request: NextRequest) {
     console.log('Starting real-time ingestion using Supabase Edge Function');
     
     // Prepare source data for Edge Function
-    const xHandles = sources.filter(s => s.type === 'x' && s.is_active).map(s => s.handle).filter(Boolean);
-    const youtubeChannels = sources.filter(s => s.type === 'youtube' && s.is_active).map(s => s.handle).filter(Boolean);
-    const blogUrls = sources.filter(s => s.type === 'blog' && s.is_active).map(s => s.url).filter(Boolean);
-    const rssUrls = sources.filter(s => s.type === 'rss' && s.is_active).map(s => s.url).filter(Boolean);
+    const xHandles = sources.filter(s => s.type === 'x' && s.active).map(s => s.handle).filter(Boolean);
+    const youtubeChannels = sources.filter(s => s.type === 'youtube' && s.active).map(s => s.handle).filter(Boolean);
+    const blogUrls = sources.filter(s => s.type === 'blog' && s.active).map(s => s.url).filter(Boolean);
+    const rssUrls = sources.filter(s => s.type === 'rss' && s.active).map(s => s.url).filter(Boolean);
     
     console.log('Sources prepared for Edge Function:', {
       xHandles,
