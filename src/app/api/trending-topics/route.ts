@@ -17,8 +17,49 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Initialize dependencies
-    // In a real app, use a DI container
+    // Get parameters
+    const { searchParams } = new URL(request.url);
+    const topic = searchParams.get('topic');
+    const force = searchParams.get('force') === 'true';
+
+    // 1. Check database first (unless force)
+    if (!force) {
+      const today = new Date();
+      today.setHours(today.getHours() - 12); // Look for trends from last 12 hours
+
+      let query = sb.from('trend_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString())
+        .order('score', { ascending: false });
+
+      if (topic) {
+        // Find items where meta->query matches topic
+        // Note: Using filter for jsonb field
+        query = query.filter('meta->>query', 'eq', topic);
+      } else {
+        // For global, look for items where query is null or explicitly 'global'
+        query = query.or('meta->>query.is.null,meta->>query.eq.""');
+      }
+
+      const { data: existingTrends, error: dbError } = await query;
+
+      if (!dbError && existingTrends && existingTrends.length > 0) {
+        console.log('Returning trends from database for user:', user.id);
+        return NextResponse.json({
+          trends: existingTrends.map(t => ({
+            id: t.id,
+            topic_name: t.title,
+            description: t.summary,
+            score: t.score,
+            source: t.source_type || 'database'
+          })),
+          source: 'database'
+        });
+      }
+    }
+
+    // 2. Discover trends if none found or forced
     const vectorStore = new SupabaseVectorStore();
     const providers: ITrendProvider[] = [];
 
@@ -28,11 +69,6 @@ export async function GET(request: Request) {
 
     const trendService = new TrendService(providers, vectorStore);
 
-    // Get topic from query params
-    const { searchParams } = new URL(request.url);
-    const topic = searchParams.get('topic');
-
-    // Get user context (mock for now, ideally fetch from profile)
     const context = {
       niche: 'Tech & AI',
       audience: 'Entrepreneurs',
@@ -42,15 +78,37 @@ export async function GET(request: Request) {
 
     const trends = await trendService.discoverTrends(context);
 
-    // Map to old format for frontend compatibility if needed, or update frontend types
-    // The frontend expects: { id, topic_name, description, score, source }
+    // Map to frontend format
     const mappedTrends = trends.map((t, i) => ({
-      id: t.id || `trend-${i}`,
+      id: t.id || `trend-${Date.now()}-${i}`,
       topic_name: t.topic,
+      momentum_score: t.score,
       description: t.description,
-      score: t.score,
       source: t.source
     }));
+
+    // 3. Save to database for persistence
+    if (mappedTrends.length > 0) {
+      const toInsert = mappedTrends.map(t => ({
+        user_id: user.id,
+        title: t.topic_name,
+        summary: t.description,
+        score: t.momentum_score,
+        source_type: t.source,
+        meta: { 
+          query: topic || null, 
+          type: 'discovery',
+          discovered_at: new Date().toISOString()
+        }
+      }));
+      
+      const { error: insertError } = await sb.from('trend_items').insert(toInsert);
+      if (insertError) {
+        console.error('Error saving trends to database:', insertError);
+      } else {
+        console.log(`Saved ${mappedTrends.length} trends to database for user:`, user.id);
+      }
+    }
 
     return NextResponse.json({ 
       trends: mappedTrends,
