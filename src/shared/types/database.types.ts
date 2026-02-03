@@ -186,7 +186,7 @@ export interface Database {
           summary: string | null
           published_at: string | null
           score: number
-          meta: Record<string, unknown> | null
+          metadata: Record<string, unknown> | null
           created_at: string
         }
         Insert: {
@@ -198,7 +198,7 @@ export interface Database {
           summary?: string | null
           published_at?: string | null
           score?: number
-          meta?: Record<string, unknown> | null
+          metadata?: Record<string, unknown> | null
           created_at?: string
         }
         Update: {
@@ -210,7 +210,7 @@ export interface Database {
           summary?: string | null
           published_at?: string | null
           score?: number
-          meta?: Record<string, unknown> | null
+          metadata?: Record<string, unknown> | null
           created_at?: string
         }
       }
