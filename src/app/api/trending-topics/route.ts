@@ -1,5 +1,5 @@
-
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { TrendService } from '@/core/application/TrendService';
 import { OpenAIProvider } from '@/infrastructure/providers/OpenAIProvider';
 import { PerplexityProvider } from '@/infrastructure/providers/PerplexityProvider';
@@ -11,10 +11,21 @@ import { sbServer } from '@/infrastructure/supabase/server';
 export async function GET(request: Request) {
   try {
     const sb = await sbServer();
-    const { data: { user } } = await sb.auth.getUser();
+    
+    // Debug logging
+    const { data: { user }, error: authError } = await sb.auth.getUser();
+    console.log('API Auth Check:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      authError: authError?.message 
+    });
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        details: authError?.message || 'No user session found',
+        cookieCount: (await cookies()).getAll().length
+      }, { status: 401 });
     }
 
     // Get parameters
@@ -64,7 +75,7 @@ export async function GET(request: Request) {
         return NextResponse.json({
           trends: existingTrends.map(t => ({
             id: t.id,
-            topic_name: t.title,
+            topic_name: t.topic_name,
             description: t.summary,
             score: t.score,
             source: t.source_type || 'database'
@@ -106,7 +117,7 @@ export async function GET(request: Request) {
     if (mappedTrends.length > 0) {
       const toInsert = mappedTrends.map(t => ({
         user_id: user.id,
-        title: t.topic_name,
+        topic_name: t.topic_name,
         summary: t.description,
         score: t.momentum_score,
         source_type: t.source,

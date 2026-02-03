@@ -182,7 +182,7 @@ export interface Database {
           user_id: string
           source_type: string | null
           source_ref: string | null
-          title: string | null
+          topic_name: string | null
           summary: string | null
           published_at: string | null
           score: number
@@ -194,7 +194,7 @@ export interface Database {
           user_id: string
           source_type?: string | null
           source_ref?: string | null
-          title?: string | null
+          topic_name?: string | null
           summary?: string | null
           published_at?: string | null
           score?: number
@@ -206,7 +206,7 @@ export interface Database {
           user_id?: string
           source_type?: string | null
           source_ref?: string | null
-          title?: string | null
+          topic_name?: string | null
           summary?: string | null
           published_at?: string | null
           score?: number
