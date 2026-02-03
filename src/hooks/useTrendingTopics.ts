@@ -71,10 +71,10 @@ export function useTrendingTopics(topic?: string) {
         throw new Error(`Failed to fetch trending topics: ${response.status}`);
       }
 
-      const data: TrendingTopicsResponse = await response.json();
+      const data = await response.json();
       console.log('API response data:', data);
 
-      setTrendingTopics(data.topics || []);
+      setTrendingTopics(data.topics || data.trends || []);
       setSources(data.sources || []);
       setDrafts(data.drafts || []);
       setError(null);
@@ -87,7 +87,7 @@ export function useTrendingTopics(topic?: string) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, topic]);
 
   const refreshTopics = useCallback(() => {
     setLoading(true);

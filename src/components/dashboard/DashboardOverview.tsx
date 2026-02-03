@@ -4,11 +4,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, FileText, Users, Activity, Sparkles, ArrowRight } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Users, Activity, Sparkles, ArrowRight, Search } from 'lucide-react';
 import { GenerateNowButton } from '@/components/GenerateNowButton';
 import { AvatarGroup } from '@/components/ui/avatar-group';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
 
 interface TrendingTopic {
   id: string;
@@ -47,15 +49,19 @@ interface DashboardOverviewProps {
   sources: Source[];
   drafts: Draft[];
   onRegenerateClick: () => void;
+  isLoading?: boolean;
 }
 
 export function DashboardOverview({
   trendingTopics,
   sources,
   drafts,
-  onRegenerateClick
+  onRegenerateClick,
+  isLoading = false
 }: DashboardOverviewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [topicInput, setTopicInput] = useState(searchParams.get('topic') || '');
 
   // Debug logging
   console.log('DashboardOverview received:', {
@@ -63,6 +69,19 @@ export function DashboardOverview({
     sources,
     drafts
   });
+
+  useEffect(() => {
+    setTopicInput(searchParams.get('topic') || '');
+  }, [searchParams]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (topicInput.trim()) {
+      router.push(`/dashboard?topic=${encodeURIComponent(topicInput.trim())}`);
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   // Create avatar data for source attribution
   const createSourceAvatars = (sourceIds: string[]) => {
@@ -100,36 +119,61 @@ export function DashboardOverview({
 
   return (
     <div className="space-y-6">
-      {/* Daily Insights Generation Card */}
+      {/* Daily Insights & Trend Discovery Card */}
       <Card className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/30">
         <CardHeader>
           <CardTitle className="text-[#F5F5F5] flex items-center gap-2">
-            <Activity className="h-5 w-5 text-purple-400" />
-            Daily Insights Generation
+            <Sparkles className="h-5 w-5 text-purple-400" />
+            Trend Discovery
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[#A0A0A0] text-sm">
-                Generate trending topics from your active sources daily
-              </p>
-              <p className="text-[#F5F5F5] text-lg font-semibold mt-1">
-                {trendingTopics.length}/5 topics generated
-              </p>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1 w-full space-y-2">
+              <label className="text-sm text-gray-400">What niche or topic do you want to explore?</label>
+              <form onSubmit={handleSearch} className="relative flex items-center">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="e.g. 'SaaS Marketing', 'Crypto News' (Leave empty for general trends)"
+                  value={topicInput}
+                  onChange={(e) => setTopicInput(e.target.value)}
+                  className="pl-10 bg-neutral-900/50 border-neutral-700 text-white focus:ring-purple-500/50 focus:border-purple-500/50"
+                />
+              </form>
             </div>
             <div className="flex gap-2">
-              <GenerateNowButton />
-              <Button
-                onClick={onRegenerateClick}
-                variant="outline"
-                size="sm"
-                className="border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+              <Button 
+                onClick={handleSearch}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white min-w-[140px]"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerate daily insights
+                Explore Trends
               </Button>
             </div>
+          </div>
+          
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
+             <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-purple-400" />
+                <span className="text-[#A0A0A0] text-sm">
+                  {trendingTopics.length > 0 
+                  ? `${trendingTopics.length} trends found` 
+                  : "Discover high-potential content opportunities"}
+                </span>
+             </div>
+             
+             {/* Retain the background generation button for deep scans if needed, or maybe just the refresh */}
+             <div className="flex gap-2">
+                <Button
+                  onClick={onRegenerateClick}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-white hover:bg-white/5"
+                >
+                  <RefreshCw className="h-3 w-3 mr-2" />
+                  Refresh
+                </Button>
+             </div>
           </div>
         </CardContent>
       </Card>
@@ -159,8 +203,24 @@ export function DashboardOverview({
                 className="bg-[#1E1E1E] border border-neutral-800 rounded-xl p-8 text-center min-h-[300px] flex flex-col items-center justify-center"
               >
                 <Sparkles className="h-10 w-10 text-purple-500/50 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No trends generated for your niche yet.</p>
-                <GenerateNowButton />
+                <p className="text-gray-400 mb-4">
+                  {isLoading ? 'Scanning for latest trends...' : 'No trends found for your niche yet.'}
+                </p>
+                {isLoading ? (
+                  <div className="w-full max-w-md space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse flex flex-col p-4 gap-2">
+                        <div className="h-4 bg-white/10 rounded w-1/2" />
+                        <div className="h-3 bg-white/5 rounded w-3/4" />
+                        <div className="h-3 bg-white/5 rounded w-1/4" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">
+                    Try adding more sources or exploring a different topic
+                  </div>
+                )}
               </motion.div>
             ) : (
               <div className="grid gap-3 min-h-[300px]">

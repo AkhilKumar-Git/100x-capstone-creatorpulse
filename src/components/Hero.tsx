@@ -12,17 +12,7 @@ import { cn } from "@/shared/utils/cn";
 export default function Hero() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [topic, setTopic] = useState("");
   const router = useRouter();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (topic.trim()) {
-      router.push(`/dashboard?topic=${encodeURIComponent(topic.trim())}`);
-    } else {
-       router.push('/dashboard');
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -247,21 +237,20 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
           >
-            <form onSubmit={handleSearch} className="relative w-full flex items-center">
-              <input
-                type="text"
-                placeholder="Enter your niche (e.g., 'Fashion Trends', 'AI News')"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="w-full px-6 py-4 bg-neutral-800/80 border border-neutral-700 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all backdrop-blur-sm pr-32"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-2 bottom-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full text-white font-medium hover:opacity-90 transition-opacity"
+            <div className="flex gap-4">
+              <AnimatedButton
+                onClick={() => window.location.href = "/signup"}
+                className="px-8 py-4 text-lg font-semibold"
               >
-                Find Trends
+                Get Started Free
+              </AnimatedButton>
+              <button
+                onClick={() => window.location.href = "#features"}
+                className="px-8 py-4 text-lg font-semibold text-gray-300 hover:text-white transition-colors border border-neutral-700 hover:border-neutral-500 rounded-full"
+              >
+                Learn More
               </button>
-            </form>
+            </div>
           </motion.div>
 
           {/* Platform Logos */}

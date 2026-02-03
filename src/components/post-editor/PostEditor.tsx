@@ -38,7 +38,6 @@ import {
   Wand2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GenerateNowButton } from '@/components/GenerateNowButton';
 import { toast } from 'sonner';
 
 type Platform = 'x' | 'linkedin' | 'instagram';

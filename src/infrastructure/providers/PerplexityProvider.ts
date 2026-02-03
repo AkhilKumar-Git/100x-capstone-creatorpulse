@@ -35,8 +35,18 @@ export class PerplexityProvider implements ITrendProvider {
       if (!response.ok) throw new Error(`Perplexity API error: ${response.statusText}`);
 
       const data = await response.json();
-      const content = data.choices[0]?.message?.content?.replace(/```json\n?|\n?```/g, '');
-      const parsed = JSON.parse(content || '{}');
+      const rawContent = data.choices[0]?.message?.content || '{}';
+      
+      // Robust JSON extraction
+      let jsonContent = rawContent;
+      const firstBrace = rawContent.indexOf('{');
+      const lastBrace = rawContent.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        jsonContent = rawContent.substring(firstBrace, lastBrace + 1);
+      }
+      
+      const parsed = JSON.parse(jsonContent);
       const trends = parsed.trends || [];
 
       return trends.map((t: any) => ({

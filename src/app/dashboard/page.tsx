@@ -21,14 +21,7 @@ function DashboardContent() {
     refreshTopics();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
-
+  // No full-page loader here, handle it in components for better UX
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -69,6 +62,7 @@ function DashboardContent() {
             sources={sources}
             drafts={drafts}
             onRegenerateClick={handleRegenerateClick}
+            isLoading={loading}
           />
         </TabsContent>
 
